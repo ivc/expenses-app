@@ -3,6 +3,7 @@ package com.github.ivc.expenses.db
 import com.github.ivc.expenses.db.BuiltinCategoryIcon.Default
 import com.github.ivc.expenses.db.BuiltinCategoryIcon.Unknown
 import com.google.common.truth.Expect
+import io.mockk.mockk
 import org.junit.Rule
 import org.junit.Test
 
@@ -10,7 +11,7 @@ class CategoryIconConvertersTest {
     @JvmField
     @Rule
     val expect: Expect = Expect.create()
-    private val conv = CategoryIconConverters()
+    private val conv = Converters(mockk(), mockk(), mockk())
 
     companion object {
         val cases = mapOf(
@@ -22,17 +23,17 @@ class CategoryIconConvertersTest {
     }
 
     @Test
-    fun unmarshal() {
+    fun stringToCategoryIconRef() {
         cases.forEach {
-            val got = conv.unmarshal(it.key)
+            val got = conv.stringToCategoryIconRef(it.key)
             expect.that(got).isEqualTo(it.value)
         }
     }
 
     @Test
-    fun marshal() {
+    fun categoryIconRefToString() {
         cases.forEach {
-            val got = conv.marshal(it.value)
+            val got = conv.categoryIconRefToString(it.value)
             expect.that(got).isEqualTo(it.key)
         }
     }

@@ -4,7 +4,6 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverter
 import com.github.ivc.expenses.R
 
 @Entity
@@ -22,22 +21,11 @@ data class CategoryIconRef(
 
 enum class BuiltinCategoryIcon(@DrawableRes val id: Int) {
     Default(R.drawable.ic_cat_default),
-    Unknown(R.drawable.ic_cat_unknown),
-}
-
-class CategoryIconConverters {
-    @TypeConverter
-    fun unmarshal(value: String): CategoryIconRef {
-        val builtinName = value.removePrefix(builtinPrefix)
-        val builtin = builtinCategoryIcons[builtinName] ?: BuiltinCategoryIcon.Unknown
-        return CategoryIconRef(value, builtin)
-    }
-
-    @TypeConverter
-    fun marshal(value: CategoryIconRef) = value.url
+    Unknown(R.drawable.ic_cat_unknown);
 
     companion object {
-        const val builtinPrefix = "builtin:"
-        val builtinCategoryIcons = BuiltinCategoryIcon.entries.associateBy { it.name }
+        const val prefix = "builtin:"
+        private val _byName = entries.associateBy { it.name }
+        fun byName(name: String): BuiltinCategoryIcon? = _byName[name]
     }
 }
