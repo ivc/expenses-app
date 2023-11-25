@@ -18,7 +18,6 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class CategoryDaoTest {
     private lateinit var db: AppDb
-    private lateinit var dao: CategoryDao
 
     @Before
     fun setup() {
@@ -29,7 +28,6 @@ class CategoryDaoTest {
             )
             .addTypeConverter(Converters())
             .build()
-        dao = db.categories()
     }
 
     @After
@@ -44,7 +42,7 @@ class CategoryDaoTest {
             icon = CategoryIconRef(url = "builtin:default", builtin = Default),
             color = Color.Green.toArgb(),
         )
-        val got = dao.insert(value)
+        val got = db.categories.insert(value)
         assertThat(got).isEqualTo(1)
     }
 
@@ -73,7 +71,7 @@ class CategoryDaoTest {
         want.forEach {
             db.insertCategory(it.id, it.name, it.icon.url, it.color)
         }
-        val got = dao.all().first()
+        val got = db.categories.all().first()
         assertThat(got).containsExactlyElementsIn(want)
     }
 }

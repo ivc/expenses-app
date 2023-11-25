@@ -14,7 +14,6 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class VendorDaoTest {
     private lateinit var db: AppDb
-    private lateinit var dao: VendorDao
 
     @Before
     fun setup() {
@@ -25,7 +24,6 @@ class VendorDaoTest {
             )
             .addTypeConverter(Converters())
             .build()
-        dao = db.vendors()
     }
 
     @After
@@ -36,7 +34,7 @@ class VendorDaoTest {
     @Test
     fun insert() = runTest {
         val value = Vendor(name = "test")
-        val got = dao.insert(value)
+        val got = db.vendors.insert(value)
         assertThat(got).isEqualTo(1)
     }
 
@@ -47,7 +45,7 @@ class VendorDaoTest {
             name = "test",
             categoryId = categoryId,
         )
-        val got = dao.insert(value)
+        val got = db.vendors.insert(value)
         assertThat(got).isEqualTo(1)
     }
 
@@ -59,7 +57,7 @@ class VendorDaoTest {
             categoryId = 1,
         )
         try {
-            dao.insert(value)
+            db.vendors.insert(value)
         } catch (exc: SQLiteConstraintException) {
             thrown = true
             assertThat(exc).hasMessageThat().contains("FOREIGN KEY")
@@ -76,7 +74,7 @@ class VendorDaoTest {
         want.forEach {
             db.insertVendor(it.value, it.key)
         }
-        val got = dao.idByName()
+        val got = db.vendors.idByName()
         assertThat(got).isEqualTo(want)
     }
 }

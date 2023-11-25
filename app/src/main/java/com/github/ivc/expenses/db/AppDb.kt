@@ -15,7 +15,7 @@ import androidx.room.TypeConverters
 )
 @TypeConverters(Converters::class)
 abstract class AppDb : RoomDatabase() {
-    abstract fun categories(): CategoryDao
-    abstract fun vendors(): VendorDao
-    abstract fun purchases(): PurchaseDao
+    abstract val categories: CategoryDao
+    abstract val vendors: VendorDao
+    abstract val purchases: PurchaseDao
 }

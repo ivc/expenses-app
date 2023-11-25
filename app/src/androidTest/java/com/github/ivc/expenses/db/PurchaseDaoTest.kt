@@ -16,7 +16,6 @@ import java.time.ZonedDateTime
 @RunWith(AndroidJUnit4::class)
 class PurchaseDaoTestDaoTest {
     private lateinit var db: AppDb
-    private lateinit var dao: PurchaseDao
 
     @Before
     fun setup() {
@@ -24,7 +23,6 @@ class PurchaseDaoTestDaoTest {
             ApplicationProvider.getApplicationContext(),
             AppDb::class.java,
         ).addTypeConverter(Converters()).build()
-        dao = db.purchases()
     }
 
     @After
@@ -41,7 +39,7 @@ class PurchaseDaoTestDaoTest {
             currency = Currency.getInstance("USD"),
             vendorId = vendorId,
         )
-        val got = dao.insert(value)
+        val got = db.purchases.insert(value)
         assertThat(got).isEqualTo(1)
     }
 
@@ -56,7 +54,7 @@ class PurchaseDaoTestDaoTest {
             vendorId = vendorId,
             categoryId = categoryId,
         )
-        val got = dao.insert(value)
+        val got = db.purchases.insert(value)
         assertThat(got).isEqualTo(1)
     }
 
@@ -70,7 +68,7 @@ class PurchaseDaoTestDaoTest {
             vendorId = 1,
         )
         try {
-            dao.insert(value)
+            db.purchases.insert(value)
         } catch (exc: SQLiteConstraintException) {
             thrown = true
             assertThat(exc).hasMessageThat().contains("FOREIGN KEY")
@@ -90,7 +88,7 @@ class PurchaseDaoTestDaoTest {
             categoryId = 1,
         )
         try {
-            dao.insert(value)
+            db.purchases.insert(value)
         } catch (exc: SQLiteConstraintException) {
             thrown = true
             assertThat(exc).hasMessageThat().contains("FOREIGN KEY")
