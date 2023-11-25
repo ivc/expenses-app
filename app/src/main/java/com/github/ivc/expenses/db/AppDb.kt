@@ -18,4 +18,16 @@ abstract class AppDb : RoomDatabase() {
     abstract val categories: CategoryDao
     abstract val vendors: VendorDao
     abstract val purchases: PurchaseDao
+
+    companion object {
+        private lateinit var _instance: AppDb
+        val instance get() = _instance
+
+        fun initialize(builder: Builder<AppDb>) {
+            if (::_instance.isInitialized) {
+                throw IllegalStateException("AppDb already initialized")
+            }
+            _instance = builder.addTypeConverter(Converters()).build()
+        }
+    }
 }
