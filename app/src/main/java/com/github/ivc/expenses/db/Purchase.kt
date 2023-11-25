@@ -5,13 +5,38 @@ import android.icu.util.CurrencyAmount
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.Ignore
+import androidx.room.Index
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import java.time.ZonedDateTime
 
-@Entity
+@Entity(
+    foreignKeys = [
+        ForeignKey(
+            entity = Vendor::class,
+            parentColumns = ["id"],
+            childColumns = ["vendor_id"],
+            onDelete = ForeignKey.CASCADE,
+            onUpdate = ForeignKey.CASCADE,
+            deferred = false,
+        ),
+        ForeignKey(
+            entity = Category::class,
+            parentColumns = ["id"],
+            childColumns = ["category_id"],
+            onDelete = ForeignKey.SET_NULL,
+            onUpdate = ForeignKey.CASCADE,
+            deferred = false,
+        ),
+    ],
+    indices = [
+        Index("vendor_id"),
+        Index("category_id"),
+    ],
+)
 data class Purchase(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val timestamp: ZonedDateTime,
