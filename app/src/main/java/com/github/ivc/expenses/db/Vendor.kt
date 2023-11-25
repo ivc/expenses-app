@@ -6,8 +6,10 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.Insert
+import androidx.room.MapColumn
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
+import androidx.room.Query
 
 
 @Entity(
@@ -35,4 +37,10 @@ data class Vendor(
 interface VendorDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(vendor: Vendor): Long
+
+    @Query("SELECT id, name FROM vendor")
+    suspend fun idByName(): Map<
+            @MapColumn("name") String,
+            @MapColumn("id") Long,
+            >
 }

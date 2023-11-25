@@ -66,4 +66,17 @@ class VendorDaoTest {
         }
         assertThat(thrown).isTrue()
     }
+
+    @Test
+    fun queryIdByName() = runTest {
+        val want = mapOf(
+            "vendor1" to 1L,
+            "vendor2" to 2L,
+        )
+        want.forEach {
+            db.insertVendor(it.value, it.key)
+        }
+        val got = dao.idByName()
+        assertThat(got).isEqualTo(want)
+    }
 }
