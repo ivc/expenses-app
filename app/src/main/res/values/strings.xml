@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">Expenses</string>
+
+    <string name="cat_apartment">Apartment</string>
+    <string name="cat_health">Health</string>
+    <string name="cat_business">Business</string>
+    <string name="cat_transport">Transport</string>
+    <string name="cat_shopping">Shopping</string>
+    <string name="cat_groceries">Groceries</string>
+    <string name="cat_bar">Bar</string>
+    <string name="cat_fast_food">Fast Food</string>
+    <string name="cat_subscriptions">Subscriptions</string>
+    <string name="cat_games">Games</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.github.ivc.expenses.db
 
+import android.content.Context
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.room.Dao
@@ -17,7 +18,66 @@ data class Category(
     val name: String,
     val icon: CategoryIconRef,
     @ColorInt val color: Int,
-)
+) {
+    companion object {
+        fun defaultCategories(context: Context): List<Category> {
+            val r = context.applicationContext.resources
+            val theme = context.applicationContext.theme
+            return listOf(
+                Category(
+                    name = r.getString(R.string.cat_apartment),
+                    icon = BuiltinCategoryIcon.Default.ref,
+                    color = r.getColor(R.color.DarkTurquoise, theme),
+                ),
+                Category(
+                    name = r.getString(R.string.cat_health),
+                    icon = BuiltinCategoryIcon.Health.ref,
+                    color = r.getColor(R.color.Tomato, theme),
+                ),
+                Category(
+                    name = r.getString(R.string.cat_business),
+                    icon = BuiltinCategoryIcon.Work.ref,
+                    color = r.getColor(R.color.BurlyWood, theme),
+                ),
+                Category(
+                    name = r.getString(R.string.cat_transport),
+                    icon = BuiltinCategoryIcon.Car.ref,
+                    color = r.getColor(R.color.Gold, theme),
+                ),
+                Category(
+                    name = r.getString(R.string.cat_shopping),
+                    icon = BuiltinCategoryIcon.Shopping.ref,
+                    color = r.getColor(R.color.SkyBlue, theme),
+                ),
+                Category(
+                    name = r.getString(R.string.cat_groceries),
+                    icon = BuiltinCategoryIcon.ShoppingCart.ref,
+                    color = r.getColor(R.color.YellowGreen, theme),
+                ),
+                Category(
+                    name = r.getString(R.string.cat_bar),
+                    icon = BuiltinCategoryIcon.Bar.ref,
+                    color = r.getColor(R.color.HotPink, theme),
+                ),
+                Category(
+                    name = r.getString(R.string.cat_fast_food),
+                    icon = BuiltinCategoryIcon.FastFood.ref,
+                    color = r.getColor(R.color.DarkOrange, theme),
+                ),
+                Category(
+                    name = r.getString(R.string.cat_subscriptions),
+                    icon = BuiltinCategoryIcon.Subscriptions.ref,
+                    color = r.getColor(R.color.FireBrick, theme),
+                ),
+                Category(
+                    name = r.getString(R.string.cat_games),
+                    icon = BuiltinCategoryIcon.Games.ref,
+                    color = r.getColor(R.color.MediumPurple, theme),
+                ),
+            )
+        }
+    }
+}
 
 data class CategoryIconRef(
     val url: String,
@@ -25,6 +85,16 @@ data class CategoryIconRef(
 )
 
 enum class BuiltinCategoryIcon(@DrawableRes val id: Int) {
+    Apartment(R.drawable.ic_cat_apartment),
+    Bar(R.drawable.ic_cat_bar),
+    Car(R.drawable.ic_cat_car),
+    FastFood(R.drawable.ic_cat_fast_food),
+    Games(R.drawable.ic_cat_games),
+    Health(R.drawable.ic_cat_health),
+    Shopping(R.drawable.ic_cat_shopping),
+    ShoppingCart(R.drawable.ic_cat_shopping_cart),
+    Subscriptions(R.drawable.ic_cat_subscriptions),
+    Work(R.drawable.ic_cat_work),
     Default(R.drawable.ic_cat_default),
     Unknown(R.drawable.ic_cat_unknown);
 
