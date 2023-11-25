@@ -8,6 +8,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.ivc.expenses.db.BuiltinCategoryIcon.Default
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
@@ -45,5 +46,34 @@ class CategoryDaoTest {
         )
         val got = dao.insert(value)
         assertThat(got).isEqualTo(1)
+    }
+
+    @Test
+    fun queryAll() = runTest {
+        val want = listOf(
+            Category(
+                id = 1,
+                name = "category1",
+                icon = Default.ref,
+                color = Color.Red.toArgb(),
+            ),
+            Category(
+                id = 2,
+                name = "category2",
+                icon = Default.ref,
+                color = Color.Green.toArgb(),
+            ),
+            Category(
+                id = 3,
+                name = "category3",
+                icon = Default.ref,
+                color = Color.Blue.toArgb(),
+            ),
+        )
+        want.forEach {
+            db.insertCategory(it.id, it.name, it.icon.url, it.color)
+        }
+        val got = dao.all().first()
+        assertThat(got).containsExactlyElementsIn(want)
     }
 }
