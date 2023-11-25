@@ -1,6 +1,5 @@
 package com.github.ivc.expenses.db
 
-import android.database.sqlite.SQLiteConstraintException
 import android.icu.util.Currency
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -60,26 +59,20 @@ class PurchaseDaoTestDaoTest {
 
     @Test
     fun insertWithMissingVendor() = runTest {
-        var thrown = false
         val value = Purchase(
             timestamp = ZonedDateTime.now(),
             amount = 123.0,
             currency = Currency.getInstance("USD"),
             vendorId = 1,
         )
-        try {
+        expectForeignKeyViolation {
             db.purchases.insert(value)
-        } catch (exc: SQLiteConstraintException) {
-            thrown = true
-            assertThat(exc).hasMessageThat().contains("FOREIGN KEY")
         }
-        assertThat(thrown).isTrue()
     }
 
     @Test
     fun insertWithMissingCategory() = runTest {
         val vendorId = db.insertVendor(name = "test")
-        var thrown = false
         val value = Purchase(
             timestamp = ZonedDateTime.now(),
             amount = 123.0,
@@ -87,12 +80,8 @@ class PurchaseDaoTestDaoTest {
             vendorId = vendorId,
             categoryId = 1,
         )
-        try {
+        expectForeignKeyViolation {
             db.purchases.insert(value)
-        } catch (exc: SQLiteConstraintException) {
-            thrown = true
-            assertThat(exc).hasMessageThat().contains("FOREIGN KEY")
         }
-        assertThat(thrown).isTrue()
     }
 }

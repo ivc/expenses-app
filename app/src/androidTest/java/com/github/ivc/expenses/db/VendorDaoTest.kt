@@ -1,6 +1,5 @@
 package com.github.ivc.expenses.db
 
-import android.database.sqlite.SQLiteConstraintException
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -51,18 +50,13 @@ class VendorDaoTest {
 
     @Test
     fun insertWithMissingCategory() = runTest {
-        var thrown = false
         val value = Vendor(
             name = "test",
             categoryId = 1,
         )
-        try {
+        expectForeignKeyViolation {
             db.vendors.insert(value)
-        } catch (exc: SQLiteConstraintException) {
-            thrown = true
-            assertThat(exc).hasMessageThat().contains("FOREIGN KEY")
         }
-        assertThat(thrown).isTrue()
     }
 
     @Test
