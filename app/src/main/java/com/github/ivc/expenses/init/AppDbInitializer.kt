@@ -6,32 +6,46 @@ import androidx.room.Room
 import androidx.room.RoomDatabase.Callback
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.startup.Initializer
+import androidx.work.ListenableWorker
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import androidx.work.WorkManagerInitializer
+import com.github.ivc.expenses.BuildConfig
 import com.github.ivc.expenses.db.AppDb
+import com.github.ivc.expenses.work.GenerateSampleData
 import com.github.ivc.expenses.work.ImportAppDb
 import com.github.ivc.expenses.work.InitAppDb
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class AppDbCallback(private val workManager: WorkManager) : Callback() {
+    private var shouldInit = false
     override fun onCreate(db: SupportSQLiteDatabase) {
-        workManager.enqueue(
-            OneTimeWorkRequestBuilder<InitAppDb>()
-                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                .build()
-        )
+        shouldInit = true
     }
 
     override fun onOpen(db: SupportSQLiteDatabase) {
-        workManager.enqueue(
-            OneTimeWorkRequestBuilder<ImportAppDb>()
-                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                .build()
-        )
+        if (!shouldInit) {
+            workManager.enqueue(workRequest<ImportAppDb>())
+            return
+        }
+
+        var work = workManager.beginWith(workRequest<InitAppDb>())
+        if (BuildConfig.DEBUG) {
+            work = work.then(workRequest<GenerateSampleData>())
+        }
+        work = work.then(workRequest<ImportAppDb>())
+        work.enqueue()
     }
+
+}
+
+private inline fun <reified W : ListenableWorker> workRequest(): OneTimeWorkRequest {
+    return OneTimeWorkRequestBuilder<W>()
+        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+        .build()
 }
 
 @Suppress("unused")
