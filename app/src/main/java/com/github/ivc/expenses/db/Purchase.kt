@@ -11,6 +11,8 @@ import androidx.room.Index
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
+import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 import java.time.ZonedDateTime
 
 @Entity(
@@ -49,8 +51,13 @@ data class Purchase(
     val currencyAmount = CurrencyAmount(amount, currency)
 }
 
+data class TimeRange(val start: ZonedDateTime, val end: ZonedDateTime)
+
 @Dao
 interface PurchaseDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(purchase: Purchase): Long
+
+    @Query("SELECT min(timestamp) `start`, max(timestamp) `end` FROM purchase")
+    fun timeRange(): Flow<TimeRange>
 }
