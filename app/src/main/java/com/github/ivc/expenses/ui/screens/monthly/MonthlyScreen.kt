@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -59,7 +60,7 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
         HorizontalPager(
             state = pagerState,
             reverseLayout = true,
-            beyondBoundsPageCount = 2,
+            beyondBoundsPageCount = 1,
             modifier = Modifier.fillMaxSize(),
         ) {
             val month = months[it]
@@ -87,13 +88,11 @@ fun PurchasesByCategory(page: MonthlyPageState, expandedState: MutableState<Set<
                     category = categorySummary.category,
                     categorySummary.total,
                     onClick = {
-                        expandedState.value =
-                            when (expandedState.value.contains(catId)) {
-                                true -> expandedState.value.minus(catId)
-                                else -> expandedState.value.plus(catId)
-                            }
-                    }
-                )
+                        expandedState.value = when (expandedState.value.contains(catId)) {
+                            true -> expandedState.value.minus(catId)
+                            else -> expandedState.value.plus(catId)
+                        }
+                    })
             }
             if (expandedState.value.contains(catId)) {
                 items(categorySummary.purchases) { purchase ->
@@ -112,7 +111,11 @@ fun PurchasesByCategory(page: MonthlyPageState, expandedState: MutableState<Set<
 fun CategoryListItem(category: Category, total: FormattedDouble, onClick: () -> Unit) {
     ListItem(
         headlineContent = {
-            Text(text = category.name)
+            Text(
+                text = category.name,
+                minLines = 1,
+                maxLines = 1,
+            )
         },
         leadingContent = {
             Icon(
@@ -125,16 +128,34 @@ fun CategoryListItem(category: Category, total: FormattedDouble, onClick: () -> 
         trailingContent = {
             CurrencyText(total)
         },
-        modifier = Modifier.clickable { onClick() },
+        modifier = Modifier
+            .height(48.dp)
+            .fillMaxWidth()
+            .clickable { onClick() },
     )
 }
 
 @Composable
 fun PurchaseListItem(timestamp: FormattedTimestamp, vendor: String, amount: FormattedDouble) {
     ListItem(
-        headlineContent = { Text(vendor) },
+        headlineContent = {
+            Text(
+                vendor,
+                minLines = 1,
+                maxLines = 1,
+            )
+        },
         trailingContent = { CurrencyText(amount) },
-        overlineContent = { Text(timestamp.toString()) }
+        overlineContent = {
+            Text(
+                timestamp.toString(),
+                minLines = 1,
+                maxLines = 1,
+            )
+        },
+        modifier = Modifier
+            .height(48.dp)
+            .fillMaxWidth(),
     )
 }
 
@@ -143,6 +164,8 @@ fun CurrencyText(amount: FormattedDouble, style: TextStyle = MaterialTheme.typog
     Text(
         text = amount.toString(),
         style = style,
+        minLines = 1,
+        maxLines = 1,
     )
 }
 
