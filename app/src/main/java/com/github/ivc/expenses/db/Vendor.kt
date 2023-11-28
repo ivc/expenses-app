@@ -1,5 +1,6 @@
 package com.github.ivc.expenses.db
 
+import androidx.compose.runtime.Stable
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Entity
@@ -13,6 +14,7 @@ import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
 
+@Stable
 @Entity(
     foreignKeys = [
         ForeignKey(

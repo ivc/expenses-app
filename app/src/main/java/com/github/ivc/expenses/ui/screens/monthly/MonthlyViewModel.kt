@@ -1,6 +1,10 @@
 package com.github.ivc.expenses.ui.screens.monthly
 
+import android.icu.number.NumberFormatter
+import android.icu.number.Precision
 import android.icu.util.Currency
+import android.icu.util.ULocale
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.ivc.expenses.db.AppDb
@@ -14,37 +18,72 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters.firstDayOfMonth
 
+private fun headerTimestampFormatter(value: ZonedDateTime): String =
+    DateTimeFormatter.ofPattern("yyyy\nMMMM").format(value)
+
+private fun itemTimestampFormatter(value: ZonedDateTime): String =
+    DateTimeFormatter.RFC_1123_DATE_TIME.format(value)
+
+private fun currencyFormatter(value: Double): String {
+    return NumberFormatter
+        .withLocale(ULocale.getDefault())
+        .precision(Precision.currency(Currency.CurrencyUsage.STANDARD))
+        .format(value)
+        .toString()
+}
+
+@Stable
+class FormattedValue<T : Comparable<T>>(private val value: T, formatter: (T) -> String) :
+    Comparable<FormattedValue<T>> {
+    private val formatted = formatter(value)
+    override fun compareTo(other: FormattedValue<T>): Int {
+        return value.compareTo(other.value)
+    }
+
+    override fun toString(): String {
+        return formatted
+    }
+}
+
+typealias FormattedTimestamp = FormattedValue<ZonedDateTime>
+typealias FormattedDouble = FormattedValue<Double>
+
+@Stable
 class MonthlyPageCollection(
     purchases: List<Purchase>,
     vendorsById: Map<Long, Vendor>,
     categoriesById: Map<Long, Category>,
 ) {
-    val pagesByMonth: Map<ZonedDateTime, MonthlyPageState> =
+    val pagesByMonth: Map<FormattedTimestamp, MonthlyPageState> =
         purchases.groupBy {
             it.timestamp.truncatedTo(ChronoUnit.DAYS).with(firstDayOfMonth())
-        }.toSortedMap().mapValues { purchasesByMonth ->
+        }.mapValues { purchasesByMonth ->
             MonthlyPageState(
                 purchasesByMonth.value,
                 vendorsById,
                 categoriesById,
             )
-        }
-    val months: List<ZonedDateTime> = pagesByMonth.keys.sortedDescending()
+        }.mapKeys {
+            FormattedTimestamp(it.key, ::headerTimestampFormatter)
+        }.toSortedMap()
+    val months: List<FormattedTimestamp> = pagesByMonth.keys.sortedDescending()
 
     companion object {
         val empty = MonthlyPageCollection(listOf(), mapOf(), mapOf())
     }
 }
 
+@Stable
 class MonthlyPageState(
     purchases: List<Purchase>,
     vendorsById: Map<Long, Vendor>,
     categoriesById: Map<Long, Category>,
 ) {
-    val total = purchases.sumOf { it.amount }
+    val total = FormattedDouble(purchases.sumOf { it.amount }, ::currencyFormatter)
     val categorySummaries: List<CategorySummary> = purchases
         .groupBy {
             it.categoryId ?: vendorsById[it.vendorId]?.categoryId
@@ -54,11 +93,17 @@ class MonthlyPageState(
             val category = categoryId?.let { categoriesById[it] }
             return@map CategorySummary(
                 category = category ?: Category.Other,
-                total = purchasesPerCategory.sumOf { it.amount },
+                total = FormattedDouble(
+                    purchasesPerCategory.sumOf { it.amount },
+                    ::currencyFormatter,
+                ),
                 purchases = purchasesPerCategory.map {
                     PurchaseSummary(
-                        timestamp = it.timestamp,
-                        amount = it.amount,
+                        timestamp = FormattedTimestamp(it.timestamp, ::itemTimestampFormatter),
+                        amount = FormattedDouble(
+                            it.amount,
+                            ::currencyFormatter
+                        ),
                         vendor = vendorsById[it.vendorId]!!,
                     )
                 }.sortedByDescending { it.timestamp }
@@ -70,15 +115,17 @@ class MonthlyPageState(
     }
 }
 
+@Stable
 data class CategorySummary(
     val category: Category,
-    val total: Double,
+    val total: FormattedDouble,
     val purchases: List<PurchaseSummary>
 )
 
+@Stable
 data class PurchaseSummary(
-    val timestamp: ZonedDateTime,
-    val amount: Double,
+    val timestamp: FormattedTimestamp,
+    val amount: FormattedDouble,
     val vendor: Vendor,
 )
 

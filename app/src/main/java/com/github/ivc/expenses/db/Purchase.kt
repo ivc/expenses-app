@@ -2,6 +2,7 @@ package com.github.ivc.expenses.db
 
 import android.icu.util.Currency
 import android.icu.util.CurrencyAmount
+import androidx.compose.runtime.Stable
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Entity
@@ -15,6 +16,7 @@ import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import java.time.ZonedDateTime
 
+@Stable
 @Entity(
     foreignKeys = [
         ForeignKey(

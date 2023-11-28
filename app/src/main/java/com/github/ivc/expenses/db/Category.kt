@@ -3,6 +3,7 @@ package com.github.ivc.expenses.db
 import android.content.Context
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.room.Dao
@@ -15,6 +16,7 @@ import androidx.room.Query
 import com.github.ivc.expenses.R
 import kotlinx.coroutines.flow.Flow
 
+@Stable
 @Entity
 data class Category(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

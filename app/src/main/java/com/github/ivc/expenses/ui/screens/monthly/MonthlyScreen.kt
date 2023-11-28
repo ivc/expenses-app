@@ -1,9 +1,6 @@
 package com.github.ivc.expenses.ui.screens.monthly
 
-import android.icu.number.NumberFormatter
-import android.icu.number.Precision
 import android.icu.util.Currency
-import android.icu.util.ULocale
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,15 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.ivc.expenses.db.Category
 import kotlinx.coroutines.launch
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 
-
-private val headerFormat = DateTimeFormatter.ofPattern("yyyy\nMMMM")
-private val itemFormatter = DateTimeFormatter.RFC_1123_DATE_TIME
-private val currencyFormat =
-    NumberFormatter.withLocale(ULocale.getDefault())
-        .precision(Precision.currency(Currency.CurrencyUsage.STANDARD))
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -66,6 +55,8 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
         HorizontalPager(
             state = pagerState,
             reverseLayout = true,
+            beyondBoundsPageCount = 2,
+            modifier = Modifier.fillMaxSize(),
         ) {
             val month = months[it]
             val page = pages.pagesByMonth[month] ?: MonthlyPageState.empty
@@ -114,7 +105,7 @@ fun PurchasesByCategory(page: MonthlyPageState, expandedState: MutableState<Set<
 }
 
 @Composable
-fun CategoryListItem(category: Category, total: Double, onClick: () -> Unit) {
+fun CategoryListItem(category: Category, total: FormattedDouble, onClick: () -> Unit) {
     ListItem(
         headlineContent = {
             Text(text = category.name)
@@ -124,6 +115,7 @@ fun CategoryListItem(category: Category, total: Double, onClick: () -> Unit) {
                 painter = painterResource(id = category.icon.builtin.id),
                 contentDescription = category.name,
                 tint = Color(category.color),
+                modifier = Modifier.size(32.dp),
             )
         },
         trailingContent = {
@@ -134,25 +126,25 @@ fun CategoryListItem(category: Category, total: Double, onClick: () -> Unit) {
 }
 
 @Composable
-fun PurchaseListItem(timestamp: ZonedDateTime, vendor: String, amount: Double) {
+fun PurchaseListItem(timestamp: FormattedTimestamp, vendor: String, amount: FormattedDouble) {
     ListItem(
         headlineContent = { Text(vendor) },
         trailingContent = { CurrencyText(amount) },
-        overlineContent = { Text(itemFormatter.format(timestamp)) }
+        overlineContent = { Text(timestamp.toString()) }
     )
 }
 
 @Composable
-fun CurrencyText(amount: Double, style: TextStyle = MaterialTheme.typography.labelLarge) {
+fun CurrencyText(amount: FormattedDouble, style: TextStyle = MaterialTheme.typography.labelLarge) {
     Text(
-        text = currencyFormat.format(amount).toString(),
+        text = amount.toString(),
         style = style,
     )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MonthTitle(timestamp: ZonedDateTime, total: Double, pagerState: PagerState) {
+fun MonthTitle(timestamp: FormattedTimestamp, total: FormattedDouble, pagerState: PagerState) {
     val coroutineScope = rememberCoroutineScope()
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -178,7 +170,7 @@ fun MonthTitle(timestamp: ZonedDateTime, total: Double, pagerState: PagerState) 
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                timestamp.format(headerFormat),
+                timestamp.toString(),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.headlineMedium,
             )
