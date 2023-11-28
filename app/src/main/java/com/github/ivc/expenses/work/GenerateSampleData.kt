@@ -11,6 +11,7 @@ import com.github.ivc.expenses.db.AppDb
 import com.github.ivc.expenses.db.Purchase
 import com.github.ivc.expenses.db.Vendor
 import kotlinx.coroutines.flow.first
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import kotlin.random.Random
 
@@ -22,6 +23,7 @@ class GenerateSampleData(ctx: Context, params: WorkerParameters) : CoroutineWork
         val rng = Random(1701012852)
         val db = AppDb.instance
         val categories = db.categories.all().first()
+        val timestamp = ZonedDateTime.of(2023, 11, 11, 1, 2, 3, 456, ZoneId.systemDefault())
 
         db.withTransaction {
             val vendorIds: List<Long> = (0..nVendors).map {
@@ -37,7 +39,7 @@ class GenerateSampleData(ctx: Context, params: WorkerParameters) : CoroutineWork
 
             for (i in 0..nPurchases) {
                 val purchase = Purchase(
-                    timestamp = ZonedDateTime.now().minusMinutes(rng.nextLong(60 * 24 * 180)),
+                    timestamp = timestamp.minusMinutes(rng.nextLong(60 * 24 * 180)),
                     amount = rng.nextDouble(10000.0),
                     vendorId = vendorIds[rng.nextInt(vendorIds.size)],
                     currency = Currency.getInstance("USD"),

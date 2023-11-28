@@ -58,6 +58,9 @@ interface PurchaseDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(purchase: Purchase): Long
 
-    @Query("SELECT min(timestamp) `start`, max(timestamp) `end` FROM purchase")
-    fun timeRange(): Flow<TimeRange>
+    @Query(
+        """SELECT min(timestamp) `start`, max(timestamp) `end`
+        FROM purchase WHERE currency = :currency"""
+    )
+    fun timeRange(currency: Currency): Flow<TimeRange>
 }

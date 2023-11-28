@@ -1,5 +1,6 @@
 package com.github.ivc.expenses.ui.screens.monthly
 
+import android.icu.util.Currency
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,13 +10,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MonthlyScreen(model: MonthlyViewModel = viewModel()) {
-    val periods by model.monthlyRanges.collectAsState()
+fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
+    val periods by (remember { model.months(currency) }).collectAsState()
 
     Column(Modifier.fillMaxSize()) {
         HorizontalPager(
@@ -23,7 +25,7 @@ fun MonthlyScreen(model: MonthlyViewModel = viewModel()) {
             modifier = Modifier.fillMaxSize(),
             reverseLayout = true,
         ) {
-            Text("${periods[periods.size-1-it]}")
+            Text("${periods[it]}")
         }
     }
 }
