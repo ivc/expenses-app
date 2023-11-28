@@ -37,4 +37,14 @@ class Converters(
         val ts = instantResolver(value)
         return ts.atZone(zoneId)
     }
+
+    @TypeConverter
+    fun regexToString(value: Regex): String {
+        return value.pattern
+    }
+
+    @TypeConverter
+    fun stringToRegex(value: String): Regex {
+        return Regex(value)
+    }
 }

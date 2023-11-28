@@ -11,6 +11,7 @@ import androidx.room.TypeConverters
         Category::class,
         Vendor::class,
         Purchase::class,
+        SmsRule::class,
     ]
 )
 @TypeConverters(Converters::class)
@@ -18,6 +19,7 @@ abstract class AppDb : RoomDatabase() {
     abstract val categories: CategoryDao
     abstract val vendors: VendorDao
     abstract val purchases: PurchaseDao
+    abstract val smsRules: SmsRuleDao
 
     companion object {
         private lateinit var _instance: AppDb

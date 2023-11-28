@@ -51,7 +51,11 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
     val pagerState = rememberPagerState { months.size }
     val expandedState = remember { mutableStateOf(setOf<Long>()) }
 
-    Box(Modifier.fillMaxSize()) {
+    if (months.isEmpty()) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Empty", style = MaterialTheme.typography.displayLarge)
+        }
+    } else {
         HorizontalPager(
             state = pagerState,
             reverseLayout = true,
