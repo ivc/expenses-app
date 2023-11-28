@@ -10,6 +10,7 @@ import androidx.room.MapColumn
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 
 @Entity(
@@ -43,4 +44,7 @@ interface VendorDao {
             @MapColumn("name") String,
             @MapColumn("id") Long,
             >
+
+    @Query("SELECT * FROM vendor")
+    fun indexById(): Flow<Map<@MapColumn("id") Long, Vendor>>
 }

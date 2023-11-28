@@ -63,4 +63,7 @@ interface PurchaseDao {
         FROM purchase WHERE currency = :currency"""
     )
     fun timeRange(currency: Currency): Flow<TimeRange>
+
+    @Query("SELECT * FROM purchase")
+    fun all(): Flow<List<Purchase>>
 }

@@ -3,9 +3,12 @@ package com.github.ivc.expenses.db
 import android.content.Context
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.Insert
+import androidx.room.MapColumn
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
@@ -20,13 +23,20 @@ data class Category(
     @ColorInt val color: Int,
 ) {
     companion object {
+        val Other = Category(
+            id = 0,
+            name = "Other", // TODO: move to resource
+            icon = BuiltinCategoryIcon.Default.ref,
+            color = Color.Gray.toArgb(),
+        )
+
         fun defaultCategories(context: Context): List<Category> {
             val r = context.applicationContext.resources
             val theme = context.applicationContext.theme
             return listOf(
                 Category(
                     name = r.getString(R.string.cat_apartment),
-                    icon = BuiltinCategoryIcon.Default.ref,
+                    icon = BuiltinCategoryIcon.Apartment.ref,
                     color = r.getColor(R.color.DarkTurquoise, theme),
                 ),
                 Category(
@@ -114,4 +124,7 @@ interface CategoryDao {
 
     @Query("SELECT * FROM category")
     fun all(): Flow<List<Category>>
+
+    @Query("SELECT * FROM category")
+    fun indexById(): Flow<Map<@MapColumn("id") Long, Category>>
 }
