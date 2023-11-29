@@ -6,8 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -29,7 +27,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.ivc.expenses.db.Category
 import com.github.ivc.expenses.ui.compose.PagerTitleBar
@@ -135,10 +132,7 @@ fun CategoryListItem(category: Category, total: FormattedDouble, onClick: () -> 
         trailingContent = {
             CurrencyText(total)
         },
-        modifier = Modifier
-            .height(48.dp)
-            .fillMaxWidth()
-            .clickable { onClick() },
+        modifier = Modifier.clickable { onClick() },
     )
 }
 
@@ -160,9 +154,6 @@ fun PurchaseListItem(timestamp: FormattedTimestamp, vendor: String, amount: Form
                 maxLines = 1,
             )
         },
-        modifier = Modifier
-            .height(48.dp)
-            .fillMaxWidth(),
     )
 }
 
