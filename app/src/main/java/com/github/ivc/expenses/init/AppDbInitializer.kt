@@ -1,7 +1,6 @@
 package com.github.ivc.expenses.init
 
 import android.content.Context
-import android.util.Log
 import androidx.room.Room
 import androidx.room.RoomDatabase.Callback
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -17,8 +16,6 @@ import com.github.ivc.expenses.db.AppDb
 import com.github.ivc.expenses.work.GenerateSampleData
 import com.github.ivc.expenses.work.ImportAppDb
 import com.github.ivc.expenses.work.InitAppDb
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
 class AppDbCallback(private val workManager: WorkManager) : Callback() {
     private var shouldInit = false
@@ -57,11 +54,6 @@ class AppDbInitializer : Initializer<AppDb> {
             .inMemoryDatabaseBuilder(context.applicationContext, AppDb::class.java)
             .addCallback(appDbCallback)
         AppDb.initialize(builder)
-        GlobalScope.launch {
-            // FIXME: remove once db.instance has actual usage
-            val vendorsCount = AppDb.instance.vendors.idByName().size
-            Log.d(this::class.java.simpleName, "vendors count: $vendorsCount")
-        }
         return AppDb.instance
     }
 
