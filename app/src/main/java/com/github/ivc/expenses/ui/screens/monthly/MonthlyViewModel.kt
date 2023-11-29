@@ -84,7 +84,8 @@ class MonthlyViewModel(db: AppDb = AppDb.instance) : ViewModel() {
             return@map CategorySummary(
                 total = total,
                 category = groupCategory,
-                entries = purchaseEntries.map(::toAnnotatedPurchaseEntry),
+                entries = purchaseEntries.map(::toAnnotatedPurchaseEntry)
+                    .sortedByDescending { it.entry.purchase.timestamp },
                 title = AnnotatedString(groupCategory.name),
                 summary = AnnotatedString(currencyFormatter.format(total).toString()),
             )
