@@ -1,8 +1,11 @@
 package com.github.ivc.expenses.ui.screens.monthly
 
 import android.icu.util.Currency
+import androidx.annotation.ColorInt
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,24 +28,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.github.ivc.expenses.db.Category
 import com.github.ivc.expenses.ui.compose.PagerTitleBar
+import com.github.ivc.expenses.ui.model.Report
 import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
-    val pagesByCurrency by model.pages.collectAsState()
-    val pages = pagesByCurrency[currency] ?: MonthlyPageCollection.empty
-    val months = pages.months
-    val pagerState = rememberPagerState { months.size }
+    val reportsByCurrency by model.monthlyReports.collectAsState()
+    val reports = reportsByCurrency[currency] ?: listOf()
+    val pagerState = rememberPagerState { reports.size }
     val expandedState = remember { mutableStateOf(setOf<Long>()) }
 
-    if (months.isEmpty()) {
+    if (reports.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Empty", style = MaterialTheme.typography.displayLarge)
         }
@@ -53,8 +54,7 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
             beyondBoundsPageCount = 1,
             modifier = Modifier.fillMaxSize(),
         ) { pageNumber ->
-            val month = months[pageNumber]
-            val page = pages.pagesByMonth[month] ?: MonthlyPageState.empty
+            val report = reports[pageNumber]
 
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -62,13 +62,9 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
             ) {
                 val coroutineScope = rememberCoroutineScope()
                 PagerTitleBar(
-                    title = buildAnnotatedString {
-                        append(month.toString())
-                        appendLine()
-                        append(page.total.toString())
-                    },
+                    title = report.title,
                     onLeft = when (pageNumber) {
-                        months.size - 1 -> null
+                        reports.size - 1 -> null
                         else -> { -> coroutineScope.launch { pagerState.scrollToPage(pageNumber + 1) } }
                     },
                     onRight = when (pageNumber) {
@@ -76,7 +72,7 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
                         else -> { -> coroutineScope.launch { pagerState.scrollToPage(pageNumber - 1) } }
                     },
                 )
-                PurchasesByCategory(page, expandedState)
+                PurchasesByCategory(report, expandedState)
             }
         }
     }
@@ -84,14 +80,16 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun PurchasesByCategory(page: MonthlyPageState, expandedState: MutableState<Set<Long>>) {
+fun PurchasesByCategory(report: Report, expandedState: MutableState<Set<Long>>) {
     LazyColumn {
-        for (categorySummary in page.categorySummaries) {
+        for (categorySummary in report.categories) {
             val catId = categorySummary.category.id
             stickyHeader {
                 CategoryListItem(
-                    category = categorySummary.category,
-                    categorySummary.total,
+                    icon = categorySummary.category.icon.builtin.id,
+                    color = categorySummary.category.color,
+                    title = categorySummary.title,
+                    summary = categorySummary.summary,
                     onClick = {
                         expandedState.value = when (expandedState.value.contains(catId)) {
                             true -> expandedState.value.minus(catId)
@@ -100,11 +98,11 @@ fun PurchasesByCategory(page: MonthlyPageState, expandedState: MutableState<Set<
                     })
             }
             if (expandedState.value.contains(catId)) {
-                items(categorySummary.purchases) { purchase ->
+                items(categorySummary.entries) { entry ->
                     PurchaseListItem(
-                        timestamp = purchase.timestamp,
-                        vendor = purchase.vendor.name,
-                        amount = purchase.amount,
+                        entry.timestamp,
+                        entry.title,
+                        entry.value,
                     )
                 }
             }
@@ -113,56 +111,46 @@ fun PurchasesByCategory(page: MonthlyPageState, expandedState: MutableState<Set<
 }
 
 @Composable
-fun CategoryListItem(category: Category, total: FormattedDouble, onClick: () -> Unit) {
+fun CategoryListItem(
+    @DrawableRes icon: Int,
+    @ColorInt color: Int,
+    title: AnnotatedString,
+    summary: AnnotatedString,
+    onClick: () -> Unit
+) {
     ListItem(
         headlineContent = {
-            Text(
-                text = category.name,
-                minLines = 1,
-                maxLines = 1,
-            )
+            Text(text = title, minLines = 1, maxLines = 1)
         },
         leadingContent = {
             Icon(
-                painter = painterResource(id = category.icon.builtin.id),
-                contentDescription = category.name,
-                tint = Color(category.color),
+                painter = painterResource(id = icon),
+                contentDescription = title.text,
+                tint = Color(color),
             )
         },
         trailingContent = {
-            CurrencyText(total)
+            Text(summary)
         },
         modifier = Modifier.clickable { onClick() },
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun PurchaseListItem(timestamp: FormattedTimestamp, vendor: String, amount: FormattedDouble) {
+fun PurchaseListItem(timestamp: AnnotatedString, title: AnnotatedString, value: AnnotatedString) {
     ListItem(
         headlineContent = {
-            Text(
-                vendor,
-                minLines = 1,
-                maxLines = 1,
-            )
+            Text(text = title, minLines = 1, maxLines = 1)
         },
-        trailingContent = { CurrencyText(amount) },
+        trailingContent = {
+            Text(value)
+        },
         overlineContent = {
-            Text(
-                timestamp.toString(),
-                minLines = 1,
-                maxLines = 1,
-            )
+            Text(timestamp)
         },
-    )
-}
-
-@Composable
-fun CurrencyText(amount: FormattedDouble, style: TextStyle = MaterialTheme.typography.labelLarge) {
-    Text(
-        text = amount.toString(),
-        style = style,
-        minLines = 1,
-        maxLines = 1,
+        modifier = Modifier.combinedClickable(
+            onClick = {},
+        ),
     )
 }

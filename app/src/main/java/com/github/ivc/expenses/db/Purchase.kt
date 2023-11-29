@@ -1,15 +1,15 @@
 package com.github.ivc.expenses.db
 
 import android.icu.util.Currency
-import android.icu.util.CurrencyAmount
 import androidx.compose.runtime.Stable
 import androidx.room.ColumnInfo
 import androidx.room.Dao
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
-import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.Insert
+import androidx.room.MapColumn
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
@@ -48,12 +48,22 @@ data class Purchase(
     val currency: Currency,
     @ColumnInfo(name = "vendor_id") val vendorId: Long,
     @ColumnInfo(name = "category_id") val categoryId: Long? = null,
-) {
-    @Ignore
-    val currencyAmount = CurrencyAmount(amount, currency)
-}
+)
+
+data class PurchaseEntry(
+    @Embedded val purchase: Purchase,
+    @Embedded("purchase_vendor_") val vendor: Vendor,
+    @ColumnInfo("group_category_id") val groupCategoryId: Long?,
+)
 
 data class TimeRange(val start: ZonedDateTime, val end: ZonedDateTime)
+
+data class MonthlyReportDateTime(val dateTime: ZonedDateTime)
+
+typealias MonthlyReportsMap = Map<@MapColumn("timestamp") MonthlyReportDateTime,
+        Map<@MapColumn("group_category_id") Long, List<PurchaseEntry>>>
+
+typealias MonthlyReportsMapsByCurrency = Map<@MapColumn("currency") Currency, MonthlyReportsMap>
 
 @Dao
 interface PurchaseDao {
@@ -66,6 +76,22 @@ interface PurchaseDao {
     )
     fun timeRange(currency: Currency): Flow<TimeRange>
 
-    @Query("SELECT * FROM purchase")
-    fun all(): Flow<List<Purchase>>
+    @Query(
+        """
+        SELECT
+            p.id,
+            p.timestamp,
+            p.currency,
+            p.amount,
+            p.vendor_id,
+            p.category_id,
+            v.id purchase_vendor_id,
+            v.name purchase_vendor_name,
+            v.category_id purchase_vendor_category_id,
+            coalesce(p.category_id, v.category_id) group_category_id
+        FROM purchase p
+        JOIN vendor v ON p.vendor_id = v.id
+        """
+    )
+    fun monthlyReports(): Flow<MonthlyReportsMapsByCurrency>
 }
