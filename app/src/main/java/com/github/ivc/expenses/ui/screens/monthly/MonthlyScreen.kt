@@ -3,10 +3,8 @@ package com.github.ivc.expenses.ui.screens.monthly
 import android.icu.util.Currency
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,13 +12,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,10 +29,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.ivc.expenses.db.Category
+import com.github.ivc.expenses.ui.compose.PagerTitleBar
 import kotlinx.coroutines.launch
 
 
@@ -62,15 +56,30 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
             reverseLayout = true,
             beyondBoundsPageCount = 1,
             modifier = Modifier.fillMaxSize(),
-        ) {
-            val month = months[it]
+        ) { pageNumber ->
+            val month = months[pageNumber]
             val page = pages.pagesByMonth[month] ?: MonthlyPageState.empty
 
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                MonthTitle(month, page.total, pagerState)
+                val coroutineScope = rememberCoroutineScope()
+                PagerTitleBar(
+                    title = buildAnnotatedString {
+                        append(month.toString())
+                        appendLine()
+                        append(page.total.toString())
+                    },
+                    onLeft = when (pageNumber) {
+                        months.size - 1 -> null
+                        else -> { -> coroutineScope.launch { pagerState.scrollToPage(pageNumber + 1) } }
+                    },
+                    onRight = when (pageNumber) {
+                        0 -> null
+                        else -> { -> coroutineScope.launch { pagerState.scrollToPage(pageNumber - 1) } }
+                    },
+                )
                 PurchasesByCategory(page, expandedState)
             }
         }
@@ -167,56 +176,4 @@ fun CurrencyText(amount: FormattedDouble, style: TextStyle = MaterialTheme.typog
         minLines = 1,
         maxLines = 1,
     )
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun MonthTitle(timestamp: FormattedTimestamp, total: FormattedDouble, pagerState: PagerState) {
-    val coroutineScope = rememberCoroutineScope()
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        IconButton(
-            onClick = {
-                coroutineScope.launch {
-                    pagerState.scrollToPage(pagerState.settledPage + 1, 0f)
-                }
-            },
-            enabled = pagerState.canScrollForward,
-        ) {
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowLeft,
-                contentDescription = "Previous Month",
-                modifier = Modifier.size(32.dp),
-            )
-        }
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                timestamp.toString(),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            CurrencyText(total, style = MaterialTheme.typography.headlineLarge)
-        }
-
-        IconButton(
-            onClick = {
-                coroutineScope.launch {
-                    pagerState.scrollToPage(pagerState.settledPage - 1, 0f)
-                }
-            },
-            enabled = pagerState.canScrollBackward,
-        ) {
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = "Next Month",
-                modifier = Modifier.size(32.dp),
-            )
-        }
-    }
 }

@@ -19,7 +19,7 @@ class GenerateSampleData(ctx: Context, params: WorkerParameters) : CoroutineWork
     override suspend fun doWork(): Result {
         Log.d(this::class.java.simpleName, "")
         val nVendors = 50
-        val nPurchases = 5000
+        val nPurchases = 500
         val rng = Random(1701012852)
         val db = AppDb.instance
         val categories = db.categories.all().first()
