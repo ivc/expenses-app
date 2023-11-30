@@ -1,6 +1,10 @@
 package com.github.ivc.expenses.ui.screens.monthly
 
+import android.icu.number.LocalizedNumberFormatter
+import android.icu.number.NumberFormatter
+import android.icu.number.Precision
 import android.icu.util.Currency
+import android.icu.util.ULocale
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -28,16 +32,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.github.ivc.expenses.db.Category
+import com.github.ivc.expenses.db.MonthlyReport
 import com.github.ivc.expenses.ui.compose.PagerTitleBar
-import com.github.ivc.expenses.ui.model.Report
 import kotlinx.coroutines.launch
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 
+private val currencyFormatter: LocalizedNumberFormatter = NumberFormatter
+    .withLocale(ULocale.getDefault())
+    .precision(Precision.currency(Currency.CurrencyUsage.STANDARD))
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
+    val locale = remember { Locale.getDefault() }
     val reportsByCurrency by model.monthlyReports.collectAsState()
     val reports = reportsByCurrency[currency] ?: listOf()
     val pagerState = rememberPagerState { reports.size }
@@ -62,7 +75,13 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
             ) {
                 val coroutineScope = rememberCoroutineScope()
                 PagerTitleBar(
-                    title = report.title,
+                    title = buildAnnotatedString {
+                        append(report.yearMonth.year.toString())
+                        appendLine()
+                        append(report.yearMonth.month.getDisplayName(TextStyle.FULL, locale))
+                        appendLine()
+                        append(currencyFormatter.format(report.total))
+                    },
                     onLeft = when (pageNumber) {
                         reports.size - 1 -> null
                         else -> { -> coroutineScope.launch { pagerState.scrollToPage(pageNumber + 1) } }
@@ -80,16 +99,17 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun PurchasesByCategory(report: Report, expandedState: MutableState<Set<Long>>) {
+fun PurchasesByCategory(report: MonthlyReport, expandedState: MutableState<Set<Long>>) {
     LazyColumn {
         for (categorySummary in report.categories) {
-            val catId = categorySummary.category.id
+            val category = categorySummary.category ?: Category.Other
+            val catId = category.id
             stickyHeader {
                 CategoryListItem(
-                    icon = categorySummary.category.icon.builtin.id,
-                    color = categorySummary.category.color,
-                    title = categorySummary.title,
-                    summary = categorySummary.summary,
+                    icon = category.icon.builtin.id,
+                    color = category.color,
+                    title = category.name,
+                    total = categorySummary.total,
                     onClick = {
                         expandedState.value = when (expandedState.value.contains(catId)) {
                             true -> expandedState.value.minus(catId)
@@ -98,11 +118,11 @@ fun PurchasesByCategory(report: Report, expandedState: MutableState<Set<Long>>) 
                     })
             }
             if (expandedState.value.contains(catId)) {
-                items(categorySummary.entries) { entry ->
+                items(categorySummary.purchases) { entry ->
                     PurchaseListItem(
-                        entry.timestamp,
-                        entry.title,
-                        entry.value,
+                        entry.purchase.timestamp,
+                        entry.vendor.name,
+                        entry.purchase.amount,
                     )
                 }
             }
@@ -114,8 +134,8 @@ fun PurchasesByCategory(report: Report, expandedState: MutableState<Set<Long>>) 
 fun CategoryListItem(
     @DrawableRes icon: Int,
     @ColorInt color: Int,
-    title: AnnotatedString,
-    summary: AnnotatedString,
+    title: String,
+    total: Double,
     onClick: () -> Unit
 ) {
     ListItem(
@@ -125,12 +145,12 @@ fun CategoryListItem(
         leadingContent = {
             Icon(
                 painter = painterResource(id = icon),
-                contentDescription = title.text,
+                contentDescription = title,
                 tint = Color(color),
             )
         },
         trailingContent = {
-            Text(summary)
+            Text(currencyFormatter.format(total).toString())
         },
         modifier = Modifier.clickable { onClick() },
     )
@@ -138,16 +158,16 @@ fun CategoryListItem(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun PurchaseListItem(timestamp: AnnotatedString, title: AnnotatedString, value: AnnotatedString) {
+fun PurchaseListItem(timestamp: ZonedDateTime, title: String, value: Double) {
     ListItem(
         headlineContent = {
             Text(text = title, minLines = 1, maxLines = 1)
         },
         trailingContent = {
-            Text(value)
+            Text(currencyFormatter.format(value).toString())
         },
         overlineContent = {
-            Text(timestamp)
+            Text(DateTimeFormatter.RFC_1123_DATE_TIME.format(timestamp))
         },
         modifier = Modifier.combinedClickable(
             onClick = {},

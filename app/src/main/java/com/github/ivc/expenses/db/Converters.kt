@@ -4,9 +4,9 @@ import android.icu.util.Currency
 import androidx.room.ProvidedTypeConverter
 import androidx.room.TypeConverter
 import java.time.Instant
+import java.time.Year
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.time.temporal.ChronoUnit
 
 @ProvidedTypeConverter
 class Converters(
@@ -50,12 +50,8 @@ class Converters(
     }
 
     @TypeConverter
-    fun longToMonthlyReportDateTime(value: Long): MonthlyReportDateTime {
+    fun longToYearMonth(value: Long): YearMonth {
         val dateTime = longToZonedDateTime(value)
-        return MonthlyReportDateTime(
-            dateTime
-                .truncatedTo(ChronoUnit.DAYS)
-                .withDayOfMonth(1)
-        )
+        return YearMonth(Year.of(dateTime.year), dateTime.month)
     }
 }

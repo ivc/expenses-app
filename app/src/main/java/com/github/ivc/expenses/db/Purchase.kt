@@ -14,6 +14,9 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import java.time.Month
+import java.time.Year
 import java.time.ZonedDateTime
 
 @Stable
@@ -21,49 +24,78 @@ import java.time.ZonedDateTime
     foreignKeys = [
         ForeignKey(
             entity = Vendor::class,
-            parentColumns = ["id"],
-            childColumns = ["vendor_id"],
+            parentColumns = ["vendor_id"],
+            childColumns = ["purchase_vendor_id"],
             onDelete = ForeignKey.CASCADE,
             onUpdate = ForeignKey.CASCADE,
             deferred = false,
         ),
         ForeignKey(
             entity = Category::class,
-            parentColumns = ["id"],
-            childColumns = ["category_id"],
+            parentColumns = ["category_id"],
+            childColumns = ["purchase_category_id"],
             onDelete = ForeignKey.SET_NULL,
             onUpdate = ForeignKey.CASCADE,
             deferred = false,
         ),
     ],
     indices = [
-        Index("vendor_id"),
-        Index("category_id"),
+        Index("purchase_vendor_id"),
+        Index("purchase_category_id"),
     ],
 )
 data class Purchase(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "purchase_id")
+    val id: Long = 0,
+
+    @ColumnInfo(name = "purchase_timestamp")
     val timestamp: ZonedDateTime,
+
+    @ColumnInfo(name = "purchase_amount")
     val amount: Double,
+
+    @ColumnInfo(name = "purchase_currency")
     val currency: Currency,
-    @ColumnInfo(name = "vendor_id") val vendorId: Long,
-    @ColumnInfo(name = "category_id") val categoryId: Long? = null,
+
+    @ColumnInfo(name = "purchase_vendor_id")
+    val vendorId: Long,
+
+    @ColumnInfo(name = "purchase_category_id")
+    val categoryId: Long? = null,
 )
 
 data class PurchaseEntry(
     @Embedded val purchase: Purchase,
-    @Embedded("purchase_vendor_") val vendor: Vendor,
-    @ColumnInfo("group_category_id") val groupCategoryId: Long?,
+    @Embedded val vendor: Vendor,
+    @Embedded val category: Category?,
 )
 
-data class TimeRange(val start: ZonedDateTime, val end: ZonedDateTime)
+data class YearMonth(
+    val year: Year,
+    val month: Month,
+) : Comparable<YearMonth> {
+    override fun compareTo(other: YearMonth): Int {
+        return when (val cmpYear = this.year.compareTo(other.year)) {
+            0 -> this.month.compareTo(other.month)
+            else -> cmpYear
+        }
+    }
+}
 
-data class MonthlyReportDateTime(val dateTime: ZonedDateTime)
+data class MonthlyReport(
+    val yearMonth: YearMonth,
+    val categories: List<CategorySummary>,
+) {
+    val total: Double by lazy { categories.sumOf { it.total } }
+}
 
-typealias MonthlyReportsMap = Map<@MapColumn("timestamp") MonthlyReportDateTime,
-        Map<@MapColumn("group_category_id") Long, List<PurchaseEntry>>>
-
-typealias MonthlyReportsMapsByCurrency = Map<@MapColumn("currency") Currency, MonthlyReportsMap>
+data class CategorySummary(
+    val category: Category?,
+    val purchases: List<PurchaseEntry>,
+) {
+    val total: Double by lazy { purchases.sumOf { it.purchase.amount } }
+}
 
 @Dao
 interface PurchaseDao {
@@ -71,27 +103,35 @@ interface PurchaseDao {
     suspend fun insert(purchase: Purchase): Long
 
     @Query(
-        """SELECT min(timestamp) `start`, max(timestamp) `end`
-        FROM purchase WHERE currency = :currency"""
-    )
-    fun timeRange(currency: Currency): Flow<TimeRange>
-
-    @Query(
         """
-        SELECT
-            p.id,
-            p.timestamp,
-            p.currency,
-            p.amount,
-            p.vendor_id,
-            p.category_id,
-            v.id purchase_vendor_id,
-            v.name purchase_vendor_name,
-            v.category_id purchase_vendor_category_id,
-            coalesce(p.category_id, v.category_id) group_category_id
+        SELECT p.*, v.*, c.*
         FROM purchase p
-        JOIN vendor v ON p.vendor_id = v.id
+        JOIN vendor v ON
+            v.vendor_id = p.purchase_vendor_id
+        LEFT OUTER JOIN category c ON
+            c.category_id = coalesce(p.purchase_category_id, v.vendor_category_id)
         """
     )
-    fun monthlyReports(): Flow<MonthlyReportsMapsByCurrency>
+    fun purchaseEntriesByCurrencyByYearMonthByCategory(): Flow<
+            Map<@MapColumn("purchase_currency") Currency,
+                    Map<@MapColumn("purchase_timestamp") YearMonth,
+                            Map<Category?, List<PurchaseEntry>>>>>
+
+    fun monthlyReports(): Flow<Map<Currency, List<MonthlyReport>>> {
+        return purchaseEntriesByCurrencyByYearMonthByCategory().map { everyResult ->
+            everyResult.mapValues { byCurrencyEntry ->
+                byCurrencyEntry.value.entries.map { byYearMonthEntry ->
+                    MonthlyReport(
+                        yearMonth = byYearMonthEntry.key,
+                        categories = byYearMonthEntry.value.entries.map { byCategoryEntry ->
+                            CategorySummary(
+                                category = byCategoryEntry.key,
+                                purchases = byCategoryEntry.value.sortedByDescending { it.purchase.timestamp },
+                            )
+                        }.sortedByDescending { it.total }
+                    )
+                }.sortedByDescending { it.yearMonth }
+            }
+        }
+    }
 }

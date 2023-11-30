@@ -19,21 +19,27 @@ import kotlinx.coroutines.flow.Flow
     foreignKeys = [
         ForeignKey(
             entity = Category::class,
-            parentColumns = ["id"],
-            childColumns = ["category_id"],
+            parentColumns = ["category_id"],
+            childColumns = ["vendor_category_id"],
             onDelete = ForeignKey.SET_NULL,
             onUpdate = ForeignKey.CASCADE,
             deferred = false,
         ),
     ],
     indices = [
-        Index("category_id"),
+        Index("vendor_category_id"),
     ],
 )
 data class Vendor(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo("vendor_id")
+    val id: Long = 0,
+
+    @ColumnInfo("vendor_name")
     val name: String,
-    @ColumnInfo(name = "category_id") val categoryId: Long? = null,
+
+    @ColumnInfo(name = "vendor_category_id")
+    val categoryId: Long? = null,
 )
 
 @Dao
@@ -41,12 +47,12 @@ interface VendorDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(vendor: Vendor): Long
 
-    @Query("SELECT id, name FROM vendor")
+    @Query("SELECT vendor_id, vendor_name FROM vendor")
     suspend fun idByName(): Map<
-            @MapColumn("name") String,
-            @MapColumn("id") Long,
+            @MapColumn("vendor_name") String,
+            @MapColumn("vendor_id") Long,
             >
 
     @Query("SELECT * FROM vendor")
-    fun indexById(): Flow<Map<@MapColumn("id") Long, Vendor>>
+    fun indexById(): Flow<Map<@MapColumn("vendor_id") Long, Vendor>>
 }

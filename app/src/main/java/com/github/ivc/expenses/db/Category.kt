@@ -6,6 +6,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.Insert
@@ -19,9 +20,17 @@ import kotlinx.coroutines.flow.Flow
 @Stable
 @Entity
 data class Category(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo("category_id")
+    val id: Long = 0,
+
+    @ColumnInfo("category_name")
     val name: String,
+
+    @ColumnInfo("category_icon")
     val icon: CategoryIconRef,
+
+    @ColumnInfo("category_color")
     @ColorInt val color: Int,
 ) {
     companion object {
@@ -128,5 +137,5 @@ interface CategoryDao {
     fun all(): Flow<List<Category>>
 
     @Query("SELECT * FROM category")
-    fun indexById(): Flow<Map<@MapColumn("id") Long, Category>>
+    fun indexById(): Flow<Map<@MapColumn("category_id") Long, Category>>
 }
