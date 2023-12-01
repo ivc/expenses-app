@@ -8,25 +8,29 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.ivc.expenses.db.Category
+import com.github.ivc.expenses.db.MonthlyReport
 import com.github.ivc.expenses.db.PurchaseEntry
 import com.github.ivc.expenses.ui.compose.CategoryListItem
 import com.github.ivc.expenses.ui.compose.PagerTitleBar
 import com.github.ivc.expenses.ui.compose.PurchaseEntryListItem
 import com.github.ivc.expenses.util.toCurrencyString
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.time.format.TextStyle
 import java.util.Locale
@@ -34,34 +38,11 @@ import java.util.Locale
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
-    val locale = remember { Locale.getDefault() }
     val reportsByCurrency by model.monthlyReports.collectAsState()
     val reports = reportsByCurrency[currency] ?: listOf()
     val pagerState = rememberPagerState { reports.size }
-    val coroutineScope = rememberCoroutineScope()
-    val expandedState = remember { mutableStateOf(setOf<Long>()) }
-
-    fun toggleCategory(catId: Long) {
-        expandedState.value =
-            when (expandedState.value.contains(catId)) {
-                true -> expandedState.value.minus(catId)
-                else -> expandedState.value.plus(catId)
-            }
-    }
-
-    fun scrollToNextPage(pageNumber: Int): (() -> Unit)? {
-        if (pageNumber == reports.size - 1) {
-            return null
-        }
-        return { coroutineScope.launch { pagerState.scrollToPage(pageNumber + 1) } }
-    }
-
-    fun scrollToPreviousPage(pageNumber: Int): (() -> Unit)? {
-        if (pageNumber == 0) {
-            return null
-        }
-        return { coroutineScope.launch { pagerState.scrollToPage(pageNumber - 1) } }
-    }
+    val expandedCategories = model.expandedCategories
+    val scroller = PagerScroller(pagerState, reports.size, rememberCoroutineScope())
 
     if (reports.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -71,41 +52,36 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
         HorizontalPager(
             state = pagerState,
             reverseLayout = true,
-            beyondBoundsPageCount = 1,
+            beyondBoundsPageCount = 36, // TODO: optimize slow composition instead
             modifier = Modifier.fillMaxSize(),
         ) { pageNumber ->
-            val report = reports[pageNumber]
+            val report by remember { derivedStateOf { reports[pageNumber] } }
 
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 PagerTitleBar(
-                    title = buildAnnotatedString {
-                        append(report.yearMonth.year.toString())
-                        appendLine()
-                        append(report.yearMonth.month.getDisplayName(TextStyle.FULL, locale))
-                        appendLine()
-                        append(report.total.toCurrencyString())
-                    },
-                    onLeft = scrollToNextPage(pageNumber),
-                    onRight = scrollToPreviousPage(pageNumber),
+                    title = report.titleText,
+                    onLeft = scroller.next(pageNumber),
+                    onRight = scroller.prev(pageNumber),
                 )
 
                 LazyColumn {
                     for (categorySummary in report.categories) {
-                        val category = categorySummary.category ?: Category.Other
-                        val catId = category.id
-                        stickyHeader {
+                        val catId = (categorySummary.category ?: Category.Other).id
+                        stickyHeader(
+                            key = "category-${catId}",
+                        ) {
                             CategoryListItem(
-                                category = category,
-                                total = categorySummary.total,
-                                onClick = { toggleCategory(catId) })
+                                summary = categorySummary,
+                                onClick = { expandedCategories.toggle(catId) })
                         }
-                        if (expandedState.value.contains(catId)) {
+                        if (expandedCategories[catId] == true) {
                             items(
                                 items = categorySummary.purchases,
                                 contentType = { PurchaseEntry::class },
+                                key = { "purchase-${it.purchase.id}" },
                             ) {
                                 PurchaseEntryListItem(it)
                             }
@@ -114,5 +90,45 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
                 }
             }
         }
+    }
+}
+
+val MonthlyReport.titleText
+    @Composable get() = remember {
+        buildAnnotatedString {
+            append(yearMonth.year.toString())
+            appendLine()
+            append(yearMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault()))
+            appendLine()
+            append(total.toCurrencyString())
+        }
+    }
+
+fun SnapshotStateMap<Long, Boolean>.toggle(id: Long) {
+    when (contains(id)) {
+        true -> remove(id)
+        else -> this[id] = true
+    }
+}
+
+class PagerScroller @OptIn(ExperimentalFoundationApi::class) constructor(
+    private val state: PagerState,
+    private val pages: Int,
+    private val scope: CoroutineScope,
+) {
+    @OptIn(ExperimentalFoundationApi::class)
+    fun next(page: Int): (() -> Unit)? {
+        if (page == pages - 1) {
+            return null
+        }
+        return { scope.launch { state.scrollToPage(page + 1) } }
+    }
+
+    @OptIn(ExperimentalFoundationApi::class)
+    fun prev(page: Int): (() -> Unit)? {
+        if (page == 0) {
+            return null
+        }
+        return { scope.launch { state.scrollToPage(page - 1) } }
     }
 }

@@ -28,10 +28,10 @@ fun PurchaseEntryListItem(entry: PurchaseEntry, onLongClick: () -> Unit = {}) {
             Text(text = entry.vendor.name, minLines = 1, maxLines = 1)
         },
         trailingContent = {
-            Text(entry.purchase.amount.toCurrencyString())
+            Text(text = entry.amountText, minLines = 1, maxLines = 1)
         },
         overlineContent = {
-            Text(entry.purchase.timestamp.toRfc1123String())
+            Text(text = entry.timestampText, minLines = 1, maxLines = 1)
         },
         modifier = Modifier.combinedClickable(
             onClick = {},
@@ -58,3 +58,9 @@ fun PreviewPurchaseEntryListItem() {
         )
     }
 }
+
+val PurchaseEntry.timestampText
+    @Composable get() = purchase.timestamp.toRfc1123String()
+
+val PurchaseEntry.amountText
+    @Composable get() = purchase.amount.toCurrencyString()

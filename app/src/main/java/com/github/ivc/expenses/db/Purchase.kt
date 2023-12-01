@@ -14,6 +14,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import java.time.Month
 import java.time.Year
@@ -118,7 +119,7 @@ interface PurchaseDao {
                             Map<Category?, List<PurchaseEntry>>>>>
 
     fun monthlyReports(): Flow<Map<Currency, List<MonthlyReport>>> {
-        return purchaseEntriesByCurrencyByYearMonthByCategory().map { everyResult ->
+        return purchaseEntriesByCurrencyByYearMonthByCategory().distinctUntilChanged().map { everyResult ->
             everyResult.mapValues { byCurrencyEntry ->
                 byCurrencyEntry.value.entries.map { byYearMonthEntry ->
                     MonthlyReport(

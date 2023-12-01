@@ -7,19 +7,21 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.ivc.expenses.db.Category
+import com.github.ivc.expenses.db.CategorySummary
 import com.github.ivc.expenses.util.toCurrencyString
 
 @Composable
 fun CategoryListItem(
-    category: Category,
-    total: Double,
+    summary: CategorySummary,
     onClick: () -> Unit = {},
 ) {
+    val category = summary.category ?: Category.Other
     ListItem(
         headlineContent = {
             Text(text = category.name, minLines = 1, maxLines = 1)
@@ -32,7 +34,7 @@ fun CategoryListItem(
             )
         },
         trailingContent = {
-            Text(total.toCurrencyString())
+            Text(text = summary.totalText, minLines = 1, maxLines = 1)
         },
         modifier = Modifier.clickable(onClick = onClick),
     )
@@ -43,8 +45,15 @@ fun CategoryListItem(
 fun PreviewCategoryListItem() {
     Surface(Modifier.width(412.dp)) {
         CategoryListItem(
-            category = Category.Other,
-            total = 123.0,
+            CategorySummary(
+                category = Category.Other,
+                purchases = listOf(),
+            )
         )
     }
 }
+
+val CategorySummary.totalText
+    @Composable get() = remember {
+        total.toCurrencyString()
+    }

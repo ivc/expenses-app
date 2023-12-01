@@ -1,6 +1,7 @@
 package com.github.ivc.expenses.ui.screens.monthly
 
 import android.icu.util.Currency
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.ivc.expenses.db.AppDb
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
 class MonthlyViewModel(db: AppDb = AppDb.instance) : ViewModel() {
+    val expandedCategories = mutableStateMapOf<Long, Boolean>()
     val monthlyReports: StateFlow<Map<Currency, List<MonthlyReport>>> =
         db.purchases.monthlyReports().stateIn(
             scope = viewModelScope,
