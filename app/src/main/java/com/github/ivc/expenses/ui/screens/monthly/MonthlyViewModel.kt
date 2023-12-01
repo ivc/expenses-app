@@ -7,7 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.ivc.expenses.db.AppDb
 import com.github.ivc.expenses.db.Category
-import com.github.ivc.expenses.db.CategorySummary
 import com.github.ivc.expenses.db.MonthlyReport
 import com.github.ivc.expenses.db.PurchaseEntry
 import com.github.ivc.expenses.db.Vendor
@@ -16,7 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
 class MonthlyViewModel(private val db: AppDb = AppDb.instance) : ViewModel() {
-    val selectedSummary = mutableStateOf<CategorySummary?>(null)
+    val selectedCategory = mutableStateOf<Category?>(null)
     val selectedEntry = mutableStateOf<PurchaseEntry?>(null)
     val monthlyReports: StateFlow<Map<Currency, List<MonthlyReport>>> =
         db.purchases.monthlyReports().stateIn(

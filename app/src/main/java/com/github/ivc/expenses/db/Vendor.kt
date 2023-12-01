@@ -15,7 +15,6 @@ import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 
-@Stable
 @Entity(
     foreignKeys = [
         ForeignKey(

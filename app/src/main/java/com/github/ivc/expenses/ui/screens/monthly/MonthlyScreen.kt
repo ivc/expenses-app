@@ -49,15 +49,15 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
     val coroutineScope = rememberCoroutineScope()
     val ioCoroutineScope = rememberCoroutineScope { Dispatchers.IO }
     var selectedEntry by model.selectedEntry
-    var selectedSummary by model.selectedSummary
+    var selectedCategory by model.selectedCategory
 
     if (reports.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Empty", style = MaterialTheme.typography.displayLarge)
         }
     } else {
-        if (selectedSummary == null) {
-            HorizontalPager(
+        when (selectedCategory) {
+            null -> HorizontalPager(
                 state = pagerState,
                 reverseLayout = true,
                 modifier = Modifier.fillMaxSize(),
@@ -82,53 +82,60 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
                         report.categories.forEach { categorySummary ->
                             CategoryListItem(
                                 summary = categorySummary,
-                                onClick = { selectedSummary = categorySummary })
+                                onClick = {
+                                    selectedCategory = categorySummary.category ?: Category.Other
+                                })
                         }
                     }
                 }
             }
-        } else {
-            val category = selectedSummary?.category ?: Category.Other
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                if (selectedEntry != null) {
-                    CategorySelectorDialog(
-                        entry = selectedEntry!!,
-                        categories = categories,
-                        onDismiss = { selectedEntry = null },
-                        onConfirm = { category ->
-                            selectedEntry?.vendor?.let { vendor ->
-                                ioCoroutineScope.launch {
-                                    model.setVendorCategory(vendor, category)
+
+            else ->
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (selectedEntry != null) {
+                        CategorySelectorDialog(
+                            entry = selectedEntry!!,
+                            categories = categories,
+                            onDismiss = { selectedEntry = null },
+                            onConfirm = { category ->
+                                selectedEntry?.vendor?.let { vendor ->
+                                    ioCoroutineScope.launch {
+                                        model.setVendorCategory(vendor, category)
+                                    }
                                 }
-                            }
-                            selectedEntry = null
-                        },
-                    )
-                }
-
-                InputChip(
-                    selected = true,
-                    onClick = { selectedSummary = null },
-                    label = { Text("${category.name}: ${selectedSummary?.totalText}") },
-                    leadingIcon = { Icon(category.painter, category.name) }
-                )
-
-                LazyColumn(Modifier.fillMaxSize()) {
-                    items(
-                        items = selectedSummary?.purchases ?: listOf(),
-                        contentType = { PurchaseEntry::class },
-                        key = { "purchase-${it.purchase.id}" },
-                    ) { entry ->
-                        PurchaseEntryListItem(
-                            entry = entry,
-                            onLongClick = { selectedEntry = it },
+                                selectedEntry = null
+                            },
                         )
                     }
+                    // TODO: remove 'find'
+                    val selectedSummary = reports[pagerState.currentPage].categories.find {
+                        (it.category ?: Category.Other) == selectedCategory
+                    }
+
+                    InputChip(
+                        selected = true,
+                        onClick = { selectedCategory = null },
+                        label = { Text("${selectedCategory!!.name}: ${selectedSummary!!.totalText}") },
+                        leadingIcon = { Icon(selectedCategory!!.painter, selectedCategory!!.name) }
+                    )
+
+                    LazyColumn(Modifier.fillMaxSize()) {
+                        items(
+                            items = selectedSummary?.purchases ?: listOf(),
+                            contentType = { PurchaseEntry::class },
+                            key = { "purchase-${it.purchase.id}" },
+                        ) { entry ->
+                            PurchaseEntryListItem(
+                                entry = entry,
+                                onLongClick = { selectedEntry = it },
+                            )
+                        }
+                    }
                 }
-            }
+
         }
     }
 }

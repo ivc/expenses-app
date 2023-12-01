@@ -1,7 +1,7 @@
 package com.github.ivc.expenses.db
 
 import android.icu.util.Currency
-import androidx.compose.runtime.Stable
+import androidx.compose.runtime.Immutable
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Embedded
@@ -20,7 +20,6 @@ import java.time.Month
 import java.time.Year
 import java.time.ZonedDateTime
 
-@Stable
 @Entity(
     foreignKeys = [
         ForeignKey(
@@ -66,14 +65,12 @@ data class Purchase(
     val categoryId: Long? = null,
 )
 
-@Stable
 data class PurchaseEntry(
     @Embedded val purchase: Purchase,
     @Embedded val vendor: Vendor,
     @Embedded val category: Category?,
 )
 
-@Stable
 data class YearMonth(
     val year: Year,
     val month: Month,
@@ -86,7 +83,7 @@ data class YearMonth(
     }
 }
 
-@Stable
+@Immutable
 data class MonthlyReport(
     val yearMonth: YearMonth,
     val categories: List<CategorySummary>,
@@ -94,7 +91,7 @@ data class MonthlyReport(
     val total: Double by lazy { categories.sumOf { it.total } }
 }
 
-@Stable
+@Immutable
 data class CategorySummary(
     val category: Category?,
     val purchases: List<PurchaseEntry>,

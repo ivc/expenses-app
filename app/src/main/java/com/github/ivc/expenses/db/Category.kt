@@ -3,7 +3,6 @@ package com.github.ivc.expenses.db
 import android.content.Context
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
-import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.room.ColumnInfo
@@ -17,7 +16,6 @@ import androidx.room.Query
 import com.github.ivc.expenses.R
 import kotlinx.coroutines.flow.Flow
 
-@Stable
 @Entity
 data class Category(
     @PrimaryKey(autoGenerate = true)
@@ -100,7 +98,6 @@ data class Category(
     }
 }
 
-@Stable
 data class CategoryIconRef(
     val url: String,
     val builtin: BuiltinCategoryIcon,
