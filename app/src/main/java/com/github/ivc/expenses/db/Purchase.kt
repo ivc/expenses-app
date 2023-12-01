@@ -66,12 +66,14 @@ data class Purchase(
     val categoryId: Long? = null,
 )
 
+@Stable
 data class PurchaseEntry(
     @Embedded val purchase: Purchase,
     @Embedded val vendor: Vendor,
     @Embedded val category: Category?,
 )
 
+@Stable
 data class YearMonth(
     val year: Year,
     val month: Month,
@@ -84,6 +86,7 @@ data class YearMonth(
     }
 }
 
+@Stable
 data class MonthlyReport(
     val yearMonth: YearMonth,
     val categories: List<CategorySummary>,
@@ -91,6 +94,7 @@ data class MonthlyReport(
     val total: Double by lazy { categories.sumOf { it.total } }
 }
 
+@Stable
 data class CategorySummary(
     val category: Category?,
     val purchases: List<PurchaseEntry>,

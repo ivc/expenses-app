@@ -100,6 +100,7 @@ data class Category(
     }
 }
 
+@Stable
 data class CategoryIconRef(
     val url: String,
     val builtin: BuiltinCategoryIcon,

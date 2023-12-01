@@ -46,7 +46,8 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
     val reports = reportsByCurrency[currency] ?: listOf()
     val categories by model.categories.collectAsState()
     val pagerState = rememberPagerState { reports.size }
-    val coroutineScope = rememberCoroutineScope { Dispatchers.IO }
+    val coroutineScope = rememberCoroutineScope()
+    val ioCoroutineScope = rememberCoroutineScope { Dispatchers.IO }
     var selectedEntry by model.selectedEntry
     var selectedSummary by model.selectedSummary
 
@@ -59,7 +60,6 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
             HorizontalPager(
                 state = pagerState,
                 reverseLayout = true,
-                beyondBoundsPageCount = 36,
                 modifier = Modifier.fillMaxSize(),
             ) { pageNumber ->
                 val report = reports[pageNumber]
@@ -100,7 +100,7 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
                         onDismiss = { selectedEntry = null },
                         onConfirm = { category ->
                             selectedEntry?.vendor?.let { vendor ->
-                                coroutineScope.launch {
+                                ioCoroutineScope.launch {
                                     model.setVendorCategory(vendor, category)
                                 }
                             }
