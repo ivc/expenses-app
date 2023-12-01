@@ -9,6 +9,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.buildAnnotatedString
@@ -29,86 +31,101 @@ import com.github.ivc.expenses.ui.compose.CategoryListItem
 import com.github.ivc.expenses.ui.compose.CategorySelectorDialog
 import com.github.ivc.expenses.ui.compose.PagerTitleBar
 import com.github.ivc.expenses.ui.compose.PurchaseEntryListItem
+import com.github.ivc.expenses.ui.compose.painter
+import com.github.ivc.expenses.ui.compose.totalText
 import com.github.ivc.expenses.util.toCurrencyString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.format.TextStyle
 import java.util.Locale
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
     val reportsByCurrency by model.monthlyReports.collectAsState()
     val reports = reportsByCurrency[currency] ?: listOf()
     val categories by model.categories.collectAsState()
     val pagerState = rememberPagerState { reports.size }
-    val expandedCategories = model.expandedCategories
     val coroutineScope = rememberCoroutineScope { Dispatchers.IO }
     var selectedEntry by model.selectedEntry
+    var selectedSummary by model.selectedSummary
 
     if (reports.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Empty", style = MaterialTheme.typography.displayLarge)
         }
     } else {
-        if (selectedEntry != null) {
-            CategorySelectorDialog(
-                entry = selectedEntry!!,
-                categories = categories,
-                onDismiss = { selectedEntry = null },
-                onConfirm = { category ->
-                    selectedEntry?.vendor?.let { vendor ->
-                        coroutineScope.launch {
-                            model.setVendorCategory(vendor, category)
+        if (selectedSummary == null) {
+            HorizontalPager(
+                state = pagerState,
+                reverseLayout = true,
+                beyondBoundsPageCount = 36,
+                modifier = Modifier.fillMaxSize(),
+            ) { pageNumber ->
+                val report = reports[pageNumber]
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    PagerTitleBar(
+                        title = report.titleText,
+                        currentPage = pageNumber,
+                        totalPages = reports.size,
+                        reversed = true,
+                        scrollToPage = { targetPage ->
+                            coroutineScope.launch {
+                                pagerState.scrollToPage(targetPage, 0f)
+                            }
+                        },
+                    )
+                    Column(Modifier.fillMaxSize()) {
+                        report.categories.forEach { categorySummary ->
+                            CategoryListItem(
+                                summary = categorySummary,
+                                onClick = { selectedSummary = categorySummary })
                         }
                     }
-                    selectedEntry = null
-                },
-            )
-        }
-
-        HorizontalPager(
-            state = pagerState,
-            reverseLayout = true,
-            beyondBoundsPageCount = 36, // TODO: optimize slow composition instead
-            modifier = Modifier.fillMaxSize(),
-        ) { pageNumber ->
-            val report = reports[pageNumber]
-
+                }
+            }
+        } else {
+            val category = selectedSummary?.category ?: Category.Other
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                PagerTitleBar(
-                    title = report.titleText,
-                    currentPage = pageNumber,
-                    totalPages = reports.size,
-                    reversed = true,
-                    scrollToPage = { coroutineScope.launch { pagerState.scrollToPage(it) } },
+                if (selectedEntry != null) {
+                    CategorySelectorDialog(
+                        entry = selectedEntry!!,
+                        categories = categories,
+                        onDismiss = { selectedEntry = null },
+                        onConfirm = { category ->
+                            selectedEntry?.vendor?.let { vendor ->
+                                coroutineScope.launch {
+                                    model.setVendorCategory(vendor, category)
+                                }
+                            }
+                            selectedEntry = null
+                        },
+                    )
+                }
+
+                InputChip(
+                    selected = true,
+                    onClick = { selectedSummary = null },
+                    label = { Text("${category.name}: ${selectedSummary?.totalText}") },
+                    leadingIcon = { Icon(category.painter, category.name) }
                 )
 
                 LazyColumn(Modifier.fillMaxSize()) {
-                    for (categorySummary in report.categories) {
-                        val catId = (categorySummary.category ?: Category.Other).id
-                        stickyHeader(
-                            key = "category-${catId}",
-                        ) {
-                            CategoryListItem(
-                                summary = categorySummary,
-                                onClick = { expandedCategories.toggle(catId) })
-                        }
-                        if (expandedCategories[catId] == true) {
-                            items(
-                                items = categorySummary.purchases,
-                                contentType = { PurchaseEntry::class },
-                                key = { "purchase-${it.purchase.id}" },
-                            ) { entry ->
-                                PurchaseEntryListItem(
-                                    entry = entry,
-                                    onLongClick = { selectedEntry = it },
-                                )
-                            }
-                        }
+                    items(
+                        items = selectedSummary?.purchases ?: listOf(),
+                        contentType = { PurchaseEntry::class },
+                        key = { "purchase-${it.purchase.id}" },
+                    ) { entry ->
+                        PurchaseEntryListItem(
+                            entry = entry,
+                            onLongClick = { selectedEntry = it },
+                        )
                     }
                 }
             }
@@ -126,10 +143,3 @@ val MonthlyReport.titleText
             append(total.toCurrencyString())
         }
     }
-
-fun SnapshotStateMap<Long, Boolean>.toggle(id: Long) {
-    when (contains(id)) {
-        true -> remove(id)
-        else -> this[id] = true
-    }
-}
