@@ -67,7 +67,7 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
                     scrollToPage = { coroutineScope.launch { pagerState.scrollToPage(it) } },
                 )
 
-                LazyColumn {
+                LazyColumn(Modifier.fillMaxSize()) {
                     for (categorySummary in report.categories) {
                         val catId = (categorySummary.category ?: Category.Other).id
                         stickyHeader(
