@@ -23,13 +23,20 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun PagerTitleBar(
     title: AnnotatedString,
+    currentPage: Int,
+    totalPages: Int,
     modifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.headlineLarge,
-    onLeft: (() -> Unit)? = null,
-    onRight: (() -> Unit)? = null,
+    reversed: Boolean = false,
+    scrollToPage: (Int) -> Unit = {},
 ) {
+    val isFirst = currentPage == 0
+    val isLast = currentPage == totalPages - 1
+    val delta = if (reversed) -1 else 1
+    val leftEnabled = if (reversed) !isLast else !isFirst
+    val rightEnabled = if (reversed) !isFirst else !isLast
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = { onLeft?.invoke() }, enabled = onLeft != null) {
+        IconButton(onClick = { scrollToPage(currentPage - delta) }, enabled = leftEnabled) {
             Icon(Icons.Default.KeyboardArrowLeft, "Previous")
         }
 
@@ -40,7 +47,7 @@ fun PagerTitleBar(
             modifier = Modifier.weight(1f),
         )
 
-        IconButton(onClick = { onRight?.invoke() }, enabled = onRight != null) {
+        IconButton(onClick = { scrollToPage(currentPage + delta) }, enabled = rightEnabled) {
             Icon(Icons.Default.KeyboardArrowRight, "Next")
         }
     }
@@ -56,6 +63,6 @@ fun PreviewPagerTitleBar() {
     }
 
     Surface(Modifier.width(412.dp)) {
-        PagerTitleBar(title)
+        PagerTitleBar(title, 0, 1)
     }
 }

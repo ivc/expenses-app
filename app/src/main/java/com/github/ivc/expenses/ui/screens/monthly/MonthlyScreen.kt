@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,7 +29,6 @@ import com.github.ivc.expenses.ui.compose.CategoryListItem
 import com.github.ivc.expenses.ui.compose.PagerTitleBar
 import com.github.ivc.expenses.ui.compose.PurchaseEntryListItem
 import com.github.ivc.expenses.util.toCurrencyString
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.time.format.TextStyle
 import java.util.Locale
@@ -42,7 +40,7 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
     val reports = reportsByCurrency[currency] ?: listOf()
     val pagerState = rememberPagerState { reports.size }
     val expandedCategories = model.expandedCategories
-    val scroller = PagerScroller(pagerState, reports.size, rememberCoroutineScope())
+    val coroutineScope = rememberCoroutineScope()
 
     if (reports.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -63,8 +61,10 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
             ) {
                 PagerTitleBar(
                     title = report.titleText,
-                    onLeft = scroller.next(pageNumber),
-                    onRight = scroller.prev(pageNumber),
+                    currentPage = pageNumber,
+                    totalPages = reports.size,
+                    reversed = true,
+                    scrollToPage = { coroutineScope.launch { pagerState.scrollToPage(it) } },
                 )
 
                 LazyColumn {
@@ -108,27 +108,5 @@ fun SnapshotStateMap<Long, Boolean>.toggle(id: Long) {
     when (contains(id)) {
         true -> remove(id)
         else -> this[id] = true
-    }
-}
-
-class PagerScroller @OptIn(ExperimentalFoundationApi::class) constructor(
-    private val state: PagerState,
-    private val pages: Int,
-    private val scope: CoroutineScope,
-) {
-    @OptIn(ExperimentalFoundationApi::class)
-    fun next(page: Int): (() -> Unit)? {
-        if (page == pages - 1) {
-            return null
-        }
-        return { scope.launch { state.scrollToPage(page + 1) } }
-    }
-
-    @OptIn(ExperimentalFoundationApi::class)
-    fun prev(page: Int): (() -> Unit)? {
-        if (page == 0) {
-            return null
-        }
-        return { scope.launch { state.scrollToPage(page - 1) } }
     }
 }
