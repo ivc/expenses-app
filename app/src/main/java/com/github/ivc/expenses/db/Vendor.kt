@@ -11,6 +11,7 @@ import androidx.room.MapColumn
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 
@@ -55,4 +56,7 @@ interface VendorDao {
 
     @Query("SELECT * FROM vendor")
     fun indexById(): Flow<Map<@MapColumn("vendor_id") Long, Vendor>>
+
+    @Update
+    suspend fun update(vendor: Vendor)
 }

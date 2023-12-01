@@ -13,10 +13,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,9 +26,11 @@ import com.github.ivc.expenses.db.Category
 import com.github.ivc.expenses.db.MonthlyReport
 import com.github.ivc.expenses.db.PurchaseEntry
 import com.github.ivc.expenses.ui.compose.CategoryListItem
+import com.github.ivc.expenses.ui.compose.CategorySelectorDialog
 import com.github.ivc.expenses.ui.compose.PagerTitleBar
 import com.github.ivc.expenses.ui.compose.PurchaseEntryListItem
 import com.github.ivc.expenses.util.toCurrencyString
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.format.TextStyle
 import java.util.Locale
@@ -38,22 +40,40 @@ import java.util.Locale
 fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
     val reportsByCurrency by model.monthlyReports.collectAsState()
     val reports = reportsByCurrency[currency] ?: listOf()
+    val categories by model.categories.collectAsState()
     val pagerState = rememberPagerState { reports.size }
     val expandedCategories = model.expandedCategories
-    val coroutineScope = rememberCoroutineScope()
+    val coroutineScope = rememberCoroutineScope { Dispatchers.IO }
+    var selectedEntry by model.selectedEntry
 
     if (reports.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Empty", style = MaterialTheme.typography.displayLarge)
         }
     } else {
+        if (selectedEntry != null) {
+            CategorySelectorDialog(
+                entry = selectedEntry!!,
+                categories = categories,
+                onDismiss = { selectedEntry = null },
+                onConfirm = { category ->
+                    selectedEntry?.vendor?.let { vendor ->
+                        coroutineScope.launch {
+                            model.setVendorCategory(vendor, category)
+                        }
+                    }
+                    selectedEntry = null
+                },
+            )
+        }
+
         HorizontalPager(
             state = pagerState,
             reverseLayout = true,
             beyondBoundsPageCount = 36, // TODO: optimize slow composition instead
             modifier = Modifier.fillMaxSize(),
         ) { pageNumber ->
-            val report by remember { derivedStateOf { reports[pageNumber] } }
+            val report = reports[pageNumber]
 
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -82,8 +102,11 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
                                 items = categorySummary.purchases,
                                 contentType = { PurchaseEntry::class },
                                 key = { "purchase-${it.purchase.id}" },
-                            ) {
-                                PurchaseEntryListItem(it)
+                            ) { entry ->
+                                PurchaseEntryListItem(
+                                    entry = entry,
+                                    onLongClick = { selectedEntry = it },
+                                )
                             }
                         }
                     }

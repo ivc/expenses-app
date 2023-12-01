@@ -22,7 +22,7 @@ import java.time.ZonedDateTime
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun PurchaseEntryListItem(entry: PurchaseEntry, onLongClick: () -> Unit = {}) {
+fun PurchaseEntryListItem(entry: PurchaseEntry, onLongClick: (PurchaseEntry) -> Unit = {}) {
     ListItem(
         headlineContent = {
             Text(text = entry.vendor.name, minLines = 1, maxLines = 1)
@@ -35,7 +35,7 @@ fun PurchaseEntryListItem(entry: PurchaseEntry, onLongClick: () -> Unit = {}) {
         },
         modifier = Modifier.combinedClickable(
             onClick = {},
-            onLongClick = onLongClick,
+            onLongClick = { onLongClick(entry) },
         ),
     )
 }
