@@ -4,10 +4,8 @@ import android.icu.util.Currency
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
@@ -25,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.github.ivc.expenses.db.Category
@@ -60,7 +57,6 @@ fun CategorySelectorDialog(
                 Text(
                     entry.category?.name ?: Category.Other.name,
                 )
-                Divider(thickness = Dp.Hairline)
                 FlowRow {
                     for (category in categories.plus(null)) {
                         IconToggleButton(
@@ -77,14 +73,8 @@ fun CategorySelectorDialog(
                         }
                     }
                 }
-                Divider(thickness = Dp.Hairline)
-                Row {
-                    TextButton(onClick = { onConfirm(selected) }) {
-                        Text("Set Category")
-                    }
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel")
-                    }
+                TextButton(onClick = { onConfirm(selected) }) {
+                    Text("Set Category")
                 }
             }
         }
