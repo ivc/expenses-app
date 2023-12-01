@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.ivc.expenses.db.Category
+import com.github.ivc.expenses.db.PurchaseEntry
 import com.github.ivc.expenses.ui.compose.CategoryListItem
 import com.github.ivc.expenses.ui.compose.PagerTitleBar
 import com.github.ivc.expenses.ui.compose.PurchaseEntryListItem
@@ -37,7 +38,30 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
     val reportsByCurrency by model.monthlyReports.collectAsState()
     val reports = reportsByCurrency[currency] ?: listOf()
     val pagerState = rememberPagerState { reports.size }
+    val coroutineScope = rememberCoroutineScope()
     val expandedState = remember { mutableStateOf(setOf<Long>()) }
+
+    fun toggleCategory(catId: Long) {
+        expandedState.value =
+            when (expandedState.value.contains(catId)) {
+                true -> expandedState.value.minus(catId)
+                else -> expandedState.value.plus(catId)
+            }
+    }
+
+    fun scrollToNextPage(pageNumber: Int): (() -> Unit)? {
+        if (pageNumber == reports.size - 1) {
+            return null
+        }
+        return { coroutineScope.launch { pagerState.scrollToPage(pageNumber + 1) } }
+    }
+
+    fun scrollToPreviousPage(pageNumber: Int): (() -> Unit)? {
+        if (pageNumber == 0) {
+            return null
+        }
+        return { coroutineScope.launch { pagerState.scrollToPage(pageNumber - 1) } }
+    }
 
     if (reports.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -56,7 +80,6 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                val coroutineScope = rememberCoroutineScope()
                 PagerTitleBar(
                     title = buildAnnotatedString {
                         append(report.yearMonth.year.toString())
@@ -65,14 +88,8 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
                         appendLine()
                         append(report.total.toCurrencyString())
                     },
-                    onLeft = when (pageNumber) {
-                        reports.size - 1 -> null
-                        else -> { -> coroutineScope.launch { pagerState.scrollToPage(pageNumber + 1) } }
-                    },
-                    onRight = when (pageNumber) {
-                        0 -> null
-                        else -> { -> coroutineScope.launch { pagerState.scrollToPage(pageNumber - 1) } }
-                    },
+                    onLeft = scrollToNextPage(pageNumber),
+                    onRight = scrollToPreviousPage(pageNumber),
                 )
 
                 LazyColumn {
@@ -83,16 +100,13 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
                             CategoryListItem(
                                 category = category,
                                 total = categorySummary.total,
-                                onClick = {
-                                    expandedState.value =
-                                        when (expandedState.value.contains(catId)) {
-                                            true -> expandedState.value.minus(catId)
-                                            else -> expandedState.value.plus(catId)
-                                        }
-                                })
+                                onClick = { toggleCategory(catId) })
                         }
                         if (expandedState.value.contains(catId)) {
-                            items(categorySummary.purchases) {
+                            items(
+                                items = categorySummary.purchases,
+                                contentType = { PurchaseEntry::class },
+                            ) {
                                 PurchaseEntryListItem(it)
                             }
                         }
