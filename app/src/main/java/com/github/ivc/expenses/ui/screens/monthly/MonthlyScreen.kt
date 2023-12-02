@@ -70,7 +70,7 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
         HorizontalPager(
             state = pagerState,
             reverseLayout = true,
-            beyondBoundsPageCount = 36, // TODO: optimize slow composition instead
+            beyondBoundsPageCount = 1,
             modifier = Modifier.fillMaxSize(),
         ) { pageNumber ->
             val report = reports[pageNumber]
