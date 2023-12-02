@@ -23,7 +23,7 @@ class GenerateSampleData(ctx: Context, params: WorkerParameters) : CoroutineWork
         val nPurchases = 5000
         val rng = Random(1701012852)
         val db = AppDb.instance
-        val categories = db.categories.all().first()
+        val categories = db.categories.all().first().plus(null)
         val timestamp = ZonedDateTime.of(2023, 11, 11, 1, 2, 3, 456, ZoneId.systemDefault())
         val words = LoremIpsum(300).values.first().split(Regex("[^a-zA-Z0-9]+")).toList()
 
@@ -35,7 +35,7 @@ class GenerateSampleData(ctx: Context, params: WorkerParameters) : CoroutineWork
                 val category = categories[rng.nextInt(categories.size)]
                 val vendor = Vendor(
                     name = name,
-                    categoryId = category.id,
+                    categoryId = category?.id,
                 )
                 return@map db.vendors.insert(vendor)
             }.toList()

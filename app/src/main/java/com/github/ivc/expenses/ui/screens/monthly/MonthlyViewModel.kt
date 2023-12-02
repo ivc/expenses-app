@@ -30,9 +30,16 @@ class MonthlyViewModel(private val db: AppDb = AppDb.instance) : ViewModel() {
         initialValue = listOf(),
     )
 
-    suspend fun setVendorCategory(vendor: Vendor, category: Category?) {
-        val updated = vendor.copy(categoryId = category?.id)
-        Log.d(this::class.java.simpleName, "setVendorCategory($vendor, $category) via update($updated)")
+    suspend fun setVendorCategory(vendor: Vendor, category: Category) {
+        val categoryId = when (category.id) {
+            0L -> null
+            else -> category.id
+        }
+        val updated = vendor.copy(categoryId = categoryId)
+        Log.d(
+            this::class.java.simpleName,
+            "setVendorCategory($vendor, $category) via update($updated)"
+        )
         db.vendors.update(updated)
     }
 

@@ -45,11 +45,11 @@ private val categoryButtonColors
 @Composable
 fun CategorySelectorDialog(
     onDismiss: () -> Unit,
-    onConfirm: (Category?) -> Unit,
+    onConfirm: (Category) -> Unit,
     categories: List<Category>,
     entry: PurchaseEntry,
 ) {
-    var selected by remember { mutableStateOf(entry.category) }
+    var selected by remember { mutableStateOf(entry.category ?: Category.Other) }
     Dialog(
         onDismissRequest = { onDismiss() },
     ) {
@@ -58,21 +58,20 @@ fun CategorySelectorDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    entry.category?.name ?: Category.Other.name,
+                    selected.name,
                 )
                 Divider(thickness = Dp.Hairline)
                 FlowRow {
-                    for (category in categories.plus(null)) {
+                    for (category in categories.plus(Category.Other)) {
                         IconToggleButton(
                             checked = category == selected,
                             colors = categoryButtonColors,
                             onCheckedChange = { selected = category },
                         ) {
-                            val iconCategory = category ?: Category.Other
                             Icon(
-                                painter = iconCategory.painter,
-                                contentDescription = iconCategory.name,
-                                tint = Color(iconCategory.color),
+                                painter = category.painter,
+                                contentDescription = category.name,
+                                tint = Color(category.color),
                             )
                         }
                     }
@@ -108,7 +107,7 @@ fun PreviewCategorySelectorDialog() {
                         vendorId = 1,
                     ),
                     vendor = Vendor(name = "test"),
-                    category = null,
+                    category = Category.Other,
                 ),
             )
         }

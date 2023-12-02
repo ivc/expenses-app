@@ -92,7 +92,7 @@ data class MonthlyReport(
 }
 
 data class CategorySummary(
-    val category: Category?,
+    val category: Category,
     val purchases: List<PurchaseEntry>,
 ) {
     val total: Double by lazy { purchases.sumOf { it.purchase.amount } }
@@ -105,7 +105,7 @@ interface PurchaseDao {
 
     @Query(
         """
-        SELECT p.*, v.*, c.*
+        SELECT p.*, v.*, c.*, coalesce(c.category_id, 0) summary_group
         FROM purchase p
         JOIN vendor v ON
             v.vendor_id = p.purchase_vendor_id
@@ -116,23 +116,25 @@ interface PurchaseDao {
     fun purchaseEntriesByCurrencyByYearMonthByCategory(): Flow<
             Map<@MapColumn("purchase_currency") Currency,
                     Map<@MapColumn("purchase_timestamp") YearMonth,
-                            Map<Category?, List<PurchaseEntry>>>>>
+                            Map<@MapColumn("summary_group") Long, List<PurchaseEntry>>>>>
 
     fun monthlyReports(): Flow<Map<Currency, List<MonthlyReport>>> {
-        return purchaseEntriesByCurrencyByYearMonthByCategory().distinctUntilChanged().map { everyResult ->
-            everyResult.mapValues { byCurrencyEntry ->
-                byCurrencyEntry.value.entries.map { byYearMonthEntry ->
-                    MonthlyReport(
-                        yearMonth = byYearMonthEntry.key,
-                        categories = byYearMonthEntry.value.entries.map { byCategoryEntry ->
-                            CategorySummary(
-                                category = byCategoryEntry.key,
-                                purchases = byCategoryEntry.value.sortedByDescending { it.purchase.timestamp },
-                            )
-                        }.sortedByDescending { it.total }
-                    )
-                }.sortedByDescending { it.yearMonth }
+        return purchaseEntriesByCurrencyByYearMonthByCategory().distinctUntilChanged()
+            .map { everyResult ->
+                everyResult.mapValues { byCurrencyEntry ->
+                    byCurrencyEntry.value.entries.map { byYearMonthEntry ->
+                        MonthlyReport(
+                            yearMonth = byYearMonthEntry.key,
+                            categories = byYearMonthEntry.value.entries.map { byCategoryEntry ->
+                                val category = byCategoryEntry.value.first().category ?: Category.Other
+                                CategorySummary(
+                                    category = category,
+                                    purchases = byCategoryEntry.value.sortedByDescending { it.purchase.timestamp },
+                                )
+                            }.sortedByDescending { it.total }
+                        )
+                    }.sortedByDescending { it.yearMonth }
+                }
             }
-        }
     }
 }

@@ -21,16 +21,15 @@ fun CategoryListItem(
     summary: CategorySummary,
     onClick: () -> Unit = {},
 ) {
-    val category = summary.category ?: Category.Other
     ListItem(
         headlineContent = {
-            Text(text = category.name, minLines = 1, maxLines = 1)
+            Text(text = summary.category.name, minLines = 1, maxLines = 1)
         },
         leadingContent = {
             Icon(
-                painter = category.painter,
-                contentDescription = category.name,
-                tint = Color(category.color),
+                painter = summary.category.painter,
+                contentDescription = summary.category.name,
+                tint = Color(summary.category.color),
             )
         },
         trailingContent = {

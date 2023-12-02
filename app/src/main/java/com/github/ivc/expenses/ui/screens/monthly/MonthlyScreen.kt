@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.github.ivc.expenses.db.Category
 import com.github.ivc.expenses.db.MonthlyReport
 import com.github.ivc.expenses.db.PurchaseEntry
 import com.github.ivc.expenses.ui.compose.CategoryListItem
@@ -90,7 +89,7 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
 
                 LazyColumn(Modifier.fillMaxSize()) {
                     for (categorySummary in report.categories) {
-                        val catId = (categorySummary.category ?: Category.Other).id
+                        val catId = categorySummary.category.id
                         stickyHeader(
                             key = "category-${catId}",
                         ) {
