@@ -4,6 +4,7 @@ package com.github.ivc.expenses.work
 import android.content.Context
 import android.icu.util.Currency
 import android.util.Log
+import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
 import androidx.room.withTransaction
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -24,11 +25,13 @@ class GenerateSampleData(ctx: Context, params: WorkerParameters) : CoroutineWork
         val db = AppDb.instance
         val categories = db.categories.all().first()
         val timestamp = ZonedDateTime.of(2023, 11, 11, 1, 2, 3, 456, ZoneId.systemDefault())
+        val words = LoremIpsum(300).values.first().split(Regex("[^a-zA-Z0-9]+")).toList()
 
         db.withTransaction {
             val vendorIds: List<Long> = (0..nVendors).map {
-                val nameLen = rng.nextInt(6, 16)
-                val name = rng.nextBytes(nameLen).joinToString("") { "%02x".format(it) }
+                val name = generateSequence {
+                    words.random(rng)
+                }.take(1 + rng.nextInt(4)).joinToString(" ")
                 val category = categories[rng.nextInt(categories.size)]
                 val vendor = Vendor(
                     name = name,
