@@ -29,6 +29,11 @@ class MonthlyViewModel(private val db: AppDb = AppDb.instance) : ViewModel() {
         started = SharingStarted.WhileSubscribed(TIMEOUT_MILLIS),
         initialValue = listOf(),
     )
+    val currencies: StateFlow<List<Currency>> = db.purchases.currencies().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(TIMEOUT_MILLIS),
+        initialValue = listOf(),
+    )
 
     suspend fun setVendorCategory(vendor: Vendor, category: Category) {
         val categoryId = when (category.id) {

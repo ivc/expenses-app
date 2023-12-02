@@ -1,6 +1,7 @@
 package com.github.ivc.expenses.ui.screens.monthly
 
 import android.icu.util.Currency
+import android.icu.util.ULocale
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,7 +38,16 @@ import java.util.Locale
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
+fun MonthlyScreen(model: MonthlyViewModel = viewModel()) {
+    val currencies by model.currencies.collectAsState()
+    val currency by remember {
+        derivedStateOf {
+            when (currencies.size) {
+                0 -> Currency.getInstance(ULocale.getDefault())
+                else -> currencies.first()
+            }
+        }
+    }
     val reportsByCurrency by model.monthlyReports.collectAsState()
     val reports = reportsByCurrency[currency] ?: listOf()
     val categories by model.categories.collectAsState()

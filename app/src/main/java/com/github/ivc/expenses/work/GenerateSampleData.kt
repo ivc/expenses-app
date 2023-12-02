@@ -3,6 +3,7 @@ package com.github.ivc.expenses.work
 
 import android.content.Context
 import android.icu.util.Currency
+import android.icu.util.ULocale
 import android.util.Log
 import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
 import androidx.room.withTransaction
@@ -26,6 +27,9 @@ class GenerateSampleData(ctx: Context, params: WorkerParameters) : CoroutineWork
         val categories = db.categories.all().first().plus(null)
         val timestamp = ZonedDateTime.of(2023, 11, 11, 1, 2, 3, 456, ZoneId.systemDefault())
         val words = LoremIpsum(300).values.first().split(Regex("[^a-zA-Z0-9]+")).toList()
+        val currency = listOf(Currency.getInstance("USD"), Currency.getInstance("GBP")).first {
+            it != Currency.getInstance(ULocale.getDefault())
+        }
 
         db.withTransaction {
             val vendorIds: List<Long> = (0..nVendors).map {
@@ -45,7 +49,7 @@ class GenerateSampleData(ctx: Context, params: WorkerParameters) : CoroutineWork
                     timestamp = timestamp.minusMinutes(rng.nextLong(60 * 24 * 180)),
                     amount = rng.nextDouble(10000.0),
                     vendorId = vendorIds[rng.nextInt(vendorIds.size)],
-                    currency = Currency.getInstance("USD"),
+                    currency = currency,
                 )
                 db.purchases.insert(purchase)
             }

@@ -118,6 +118,9 @@ interface PurchaseDao {
                     Map<@MapColumn("purchase_timestamp") YearMonth,
                             Map<@MapColumn("summary_group") Long, List<PurchaseEntry>>>>>
 
+    @Query("SELECT DISTINCT purchase_currency FROM purchase ORDER BY purchase_currency")
+    fun currencies(): Flow<List<Currency>>
+
     fun monthlyReports(): Flow<Map<Currency, List<MonthlyReport>>> {
         return purchaseEntriesByCurrencyByYearMonthByCategory().distinctUntilChanged()
             .map { everyResult ->

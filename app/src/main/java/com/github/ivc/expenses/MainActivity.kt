@@ -1,7 +1,5 @@
 package com.github.ivc.expenses
 
-import android.icu.util.Currency
-import android.icu.util.ULocale
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,7 +21,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MonthlyScreen(Currency.getInstance(ULocale.getDefault()))
+                    MonthlyScreen()
                 }
             }
         }
