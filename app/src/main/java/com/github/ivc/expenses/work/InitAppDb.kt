@@ -7,7 +7,8 @@ import androidx.work.WorkerParameters
 import com.github.ivc.expenses.db.AppDb
 import com.github.ivc.expenses.db.Category
 
-class InitAppDb(private val context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+class InitAppDb(private val context: Context, params: WorkerParameters) :
+    CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val db = AppDb.instance
         val categories = db.categories

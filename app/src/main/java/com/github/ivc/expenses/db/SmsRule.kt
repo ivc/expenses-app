@@ -18,5 +18,5 @@ data class SmsRule(
 @Dao
 interface SmsRuleDao {
     @Query("SELECT * FROM sms_rule")
-    suspend fun bySender(): Map<@MapColumn("sender") String, SmsRule>
+    suspend fun bySender(): Map<@MapColumn("sender") String, List<SmsRule>>
 }

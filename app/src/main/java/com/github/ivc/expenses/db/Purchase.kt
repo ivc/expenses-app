@@ -121,6 +121,9 @@ interface PurchaseDao {
     @Query("SELECT DISTINCT purchase_currency FROM purchase ORDER BY purchase_currency")
     fun currencies(): Flow<List<Currency>>
 
+    @Query("SELECT max(purchase_timestamp) FROM purchase")
+    suspend fun maxTimestamp(): ZonedDateTime?
+
     fun monthlyReports(): Flow<Map<Currency, List<MonthlyReport>>> {
         return purchaseEntriesByCurrencyByYearMonthByCategory().distinctUntilChanged()
             .map { everyResult ->

@@ -5,16 +5,13 @@ import androidx.room.Room
 import androidx.room.RoomDatabase.Callback
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.startup.Initializer
-import androidx.work.ListenableWorker
-import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.OutOfQuotaPolicy
+import androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST
 import androidx.work.WorkManager
 import androidx.work.WorkManagerInitializer
 import com.github.ivc.expenses.BuildConfig
 import com.github.ivc.expenses.db.AppDb
 import com.github.ivc.expenses.work.GenerateSampleData
-import com.github.ivc.expenses.work.ImportAppDb
 import com.github.ivc.expenses.work.InitAppDb
 
 class AppDbCallback(private val workManager: WorkManager) : Callback() {
@@ -25,24 +22,26 @@ class AppDbCallback(private val workManager: WorkManager) : Callback() {
 
     override fun onOpen(db: SupportSQLiteDatabase) {
         if (!shouldInit) {
-            workManager.enqueue(workRequest<ImportAppDb>())
             return
         }
 
-        var work = workManager.beginWith(workRequest<InitAppDb>())
-        if (BuildConfig.DEBUG) {
-            work = work.then(workRequest<GenerateSampleData>())
+        val initAppDbRequest = OneTimeWorkRequestBuilder<InitAppDb>()
+            .setExpedited(RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .build()
+        val generateSampleDataRequest = OneTimeWorkRequestBuilder<GenerateSampleData>()
+            .setExpedited(RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .build()
+
+        when (BuildConfig.DEBUG) {
+            true -> workManager
+                .beginWith(initAppDbRequest)
+                .then(generateSampleDataRequest)
+                .enqueue()
+
+            else -> workManager
+                .enqueue(initAppDbRequest)
         }
-        work = work.then(workRequest<ImportAppDb>())
-        work.enqueue()
     }
-
-}
-
-private inline fun <reified W : ListenableWorker> workRequest(): OneTimeWorkRequest {
-    return OneTimeWorkRequestBuilder<W>()
-        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-        .build()
 }
 
 @Suppress("unused")
@@ -51,7 +50,7 @@ class AppDbInitializer : Initializer<AppDb> {
         val workManager = WorkManager.getInstance(context)
         val appDbCallback = AppDbCallback(workManager)
         val builder = Room
-            .inMemoryDatabaseBuilder(context.applicationContext, AppDb::class.java)
+            .databaseBuilder(context.applicationContext, AppDb::class.java, "expenses.db")
             .addCallback(appDbCallback)
         AppDb.initialize(builder)
         return AppDb.instance
