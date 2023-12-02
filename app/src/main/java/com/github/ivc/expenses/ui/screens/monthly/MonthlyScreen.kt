@@ -43,7 +43,8 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
     val categories by model.categories.collectAsState()
     val pagerState = rememberPagerState { reports.size }
     val expandedCategories = model.expandedCategories
-    val coroutineScope = rememberCoroutineScope { Dispatchers.IO }
+    val coroutineScope = rememberCoroutineScope()
+    val ioCoroutineScope = rememberCoroutineScope { Dispatchers.IO }
     var selectedEntry by model.selectedEntry
 
     if (reports.isEmpty()) {
@@ -58,7 +59,7 @@ fun MonthlyScreen(currency: Currency, model: MonthlyViewModel = viewModel()) {
                 onDismiss = { selectedEntry = null },
                 onConfirm = { category ->
                     selectedEntry?.vendor?.let { vendor ->
-                        coroutineScope.launch {
+                        ioCoroutineScope.launch {
                             model.setVendorCategory(vendor, category)
                         }
                     }
