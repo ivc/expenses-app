@@ -3,6 +3,7 @@ package com.github.ivc.expenses.db
 import android.icu.util.Currency
 import androidx.room.Dao
 import androidx.room.Entity
+import androidx.room.Insert
 import androidx.room.MapColumn
 import androidx.room.PrimaryKey
 import androidx.room.Query
@@ -17,6 +18,9 @@ data class SmsRule(
 
 @Dao
 interface SmsRuleDao {
+    @Insert
+    suspend fun insert(smsRule: SmsRule): Long
+
     @Query("SELECT * FROM sms_rule")
     suspend fun bySender(): Map<@MapColumn("sender") String, List<SmsRule>>
 }

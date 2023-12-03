@@ -49,9 +49,14 @@ class AppDbInitializer : Initializer<AppDb> {
     override fun create(context: Context): AppDb {
         val workManager = WorkManager.getInstance(context)
         val appDbCallback = AppDbCallback(workManager)
-        val builder = Room
-            .databaseBuilder(context.applicationContext, AppDb::class.java, "expenses.db")
-            .addCallback(appDbCallback)
+        val builder = when (BuildConfig.DEBUG) {
+            true -> Room.inMemoryDatabaseBuilder(context.applicationContext, AppDb::class.java)
+            else -> Room.databaseBuilder(
+                context.applicationContext,
+                AppDb::class.java,
+                "expenses.db"
+            )
+        }.addCallback(appDbCallback)
         AppDb.initialize(builder)
         return AppDb.instance
     }
