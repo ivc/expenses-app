@@ -10,6 +10,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.ivc.expenses.db.Category
@@ -23,6 +25,7 @@ import java.time.ZonedDateTime
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PurchaseEntryListItem(entry: PurchaseEntry, onLongClick: (PurchaseEntry) -> Unit = {}) {
+    val haptic = LocalHapticFeedback.current
     ListItem(
         headlineContent = {
             Text(text = entry.vendor.name, minLines = 1, maxLines = 1)
@@ -35,7 +38,10 @@ fun PurchaseEntryListItem(entry: PurchaseEntry, onLongClick: (PurchaseEntry) -> 
         },
         modifier = Modifier.combinedClickable(
             onClick = {},
-            onLongClick = { onLongClick(entry) },
+            onLongClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onLongClick(entry)
+            },
         ),
     )
 }
