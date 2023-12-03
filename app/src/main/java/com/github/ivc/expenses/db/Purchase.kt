@@ -69,7 +69,7 @@ data class Purchase(
 data class PurchaseEntry(
     @Embedded val purchase: Purchase,
     @Embedded val vendor: Vendor,
-    @Embedded val category: Category?,
+    @Embedded val category: Category,
 )
 
 data class YearMonth(
@@ -105,7 +105,7 @@ interface PurchaseDao {
 
     @Query(
         """
-        SELECT p.*, v.*, c.*, coalesce(c.category_id, 0) summary_group
+        SELECT p.*, v.*, c.*
         FROM purchase p
         JOIN vendor v ON
             v.vendor_id = p.purchase_vendor_id
@@ -116,7 +116,7 @@ interface PurchaseDao {
     fun purchaseEntriesByCurrencyByYearMonthByCategory(): Flow<
             Map<@MapColumn("purchase_currency") Currency,
                     Map<@MapColumn("purchase_timestamp") YearMonth,
-                            Map<@MapColumn("summary_group") Long, List<PurchaseEntry>>>>>
+                            Map<Category, List<PurchaseEntry>>>>>
 
     @Query("SELECT DISTINCT purchase_currency FROM purchase ORDER BY purchase_currency")
     fun currencies(): Flow<List<Currency>>
@@ -132,9 +132,8 @@ interface PurchaseDao {
                         MonthlyReport(
                             yearMonth = byYearMonthEntry.key,
                             categories = byYearMonthEntry.value.entries.map { byCategoryEntry ->
-                                val category = byCategoryEntry.value.first().category ?: Category.Other
                                 CategorySummary(
-                                    category = category,
+                                    category = byCategoryEntry.key,
                                     purchases = byCategoryEntry.value.sortedByDescending { it.purchase.timestamp },
                                 )
                             }.sortedByDescending { it.total }

@@ -45,7 +45,7 @@ fun PreviewCategoryListItem() {
     Surface(Modifier.width(412.dp)) {
         CategoryListItem(
             CategorySummary(
-                category = Category.Other,
+                category = Category.Preview,
                 purchases = listOf(),
             )
         )

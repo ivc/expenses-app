@@ -1,7 +1,6 @@
 package com.github.ivc.expenses.ui.screens.monthly
 
 import android.icu.util.Currency
-import android.util.Log
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -36,15 +35,7 @@ class MonthlyViewModel(private val db: AppDb = AppDb.instance) : ViewModel() {
     )
 
     suspend fun setVendorCategory(vendor: Vendor, category: Category) {
-        val categoryId = when (category.id) {
-            0L -> null
-            else -> category.id
-        }
-        val updated = vendor.copy(categoryId = categoryId)
-        Log.d(
-            this::class.java.simpleName,
-            "setVendorCategory($vendor, $category) via update($updated)"
-        )
+        val updated = vendor.copy(categoryId = category.id)
         db.vendors.update(updated)
     }
 

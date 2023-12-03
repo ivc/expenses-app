@@ -46,7 +46,7 @@ fun CategorySelectorDialog(
     categories: List<Category>,
     entry: PurchaseEntry,
 ) {
-    var selected by remember { mutableStateOf(entry.category ?: Category.Other) }
+    var selected by remember { mutableStateOf(entry.category) }
     Dialog(
         onDismissRequest = { onDismiss() },
     ) {
@@ -58,7 +58,7 @@ fun CategorySelectorDialog(
                     selected.name,
                 )
                 FlowRow {
-                    for (category in categories.plus(Category.Other)) {
+                    for (category in categories) {
                         IconToggleButton(
                             checked = category == selected,
                             colors = categoryButtonColors,
@@ -97,7 +97,7 @@ fun PreviewCategorySelectorDialog() {
                         vendorId = 1,
                     ),
                     vendor = Vendor(name = "test"),
-                    category = Category.Other,
+                    category = Category.Preview,
                 ),
             )
         }

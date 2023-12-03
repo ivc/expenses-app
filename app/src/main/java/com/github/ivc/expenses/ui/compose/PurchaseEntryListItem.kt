@@ -53,7 +53,7 @@ fun PreviewPurchaseEntryListItem() {
                     vendorId = 0,
                 ),
                 vendor = Vendor(name = "Test Vendor"),
-                category = Category.Other,
+                category = Category.Preview,
             ),
         )
     }

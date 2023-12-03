@@ -40,7 +40,7 @@ data class Vendor(
     val name: String,
 
     @ColumnInfo(name = "vendor_category_id")
-    val categoryId: Long? = null,
+    val categoryId: Long = Category.Default,
 )
 
 @Dao

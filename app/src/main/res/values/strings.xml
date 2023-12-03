@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Expenses</string>
 
+    <string name="cat_other">Other</string>
     <string name="cat_apartment">Apartment</string>
     <string name="cat_health">Health</string>
     <string name="cat_business">Business</string>

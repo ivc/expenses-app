@@ -10,6 +10,7 @@ import androidx.room.withTransaction
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.github.ivc.expenses.db.AppDb
+import com.github.ivc.expenses.db.Category
 import com.github.ivc.expenses.db.Purchase
 import com.github.ivc.expenses.db.Vendor
 import kotlinx.coroutines.flow.first
@@ -39,7 +40,7 @@ class GenerateSampleData(ctx: Context, params: WorkerParameters) : CoroutineWork
                 val category = categories[rng.nextInt(categories.size)]
                 val vendor = Vendor(
                     name = name,
-                    categoryId = category?.id,
+                    categoryId = category?.id ?: Category.Default,
                 )
                 return@map db.vendors.insert(vendor)
             }.toList()

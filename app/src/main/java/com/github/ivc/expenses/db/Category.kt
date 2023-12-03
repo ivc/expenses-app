@@ -34,17 +34,24 @@ data class Category(
     @ColorInt val color: Int,
 ) {
     companion object {
-        val Other = Category(
-            id = 0,
-            name = "Other", // TODO: move to resource
-            icon = BuiltinCategoryIcon.Default.ref,
-            color = Color.Gray.toArgb(),
-        )
+        const val Default: Long = 1
+        val Preview =
+            Category(
+                name = "Preview",
+                icon = BuiltinCategoryIcon.Unknown.ref,
+                color = Color.Red.toArgb()
+            )
 
         fun defaultCategories(context: Context): List<Category> {
             val r = context.applicationContext.resources
             val theme = context.applicationContext.theme
             return listOf(
+                Category(
+                    id = Default,
+                    name = r.getString(R.string.cat_other),
+                    icon = BuiltinCategoryIcon.Default.ref,
+                    color = Color.Gray.toArgb(),
+                ),
                 Category(
                     name = r.getString(R.string.cat_apartment),
                     icon = BuiltinCategoryIcon.Apartment.ref,
