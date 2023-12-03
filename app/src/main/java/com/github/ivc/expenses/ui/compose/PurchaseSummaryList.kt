@@ -23,7 +23,6 @@ import com.github.ivc.expenses.db.AppDb
 import com.github.ivc.expenses.db.PurchaseEntry
 import com.github.ivc.expenses.util.toCurrencyString
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.time.ZonedDateTime
 
@@ -39,14 +38,14 @@ fun PurchaseSummaryList(
 ) {
     val purchases by model.purchasesByCategory.collectAsState()
     val totals by model.categoryTotals.collectAsState()
-    val total = totals.sumOf { it.second }
+    val total = totals.sumOf { it.total }
 
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Total: ${total.toCurrencyString()}")
         LazyColumn(Modifier.fillMaxSize()) {
-            for (pair in totals) {
-                val category = pair.first
-                val categoryTotal = pair.second
+            for (summary in totals) {
+                val category = summary.category
+                val categoryTotal = summary.total
                 stickyHeader(
                     key = "category-${category.id}",
                 ) {
@@ -82,27 +81,13 @@ class PurchaseSummaryModel(
     endDate: ZonedDateTime,
     db: AppDb = AppDb.instance,
 ) : ViewModel() {
-    val purchasesByCategory = db.purchases
-        .list(currency, startDate, endDate)
-        .map { allEntries ->
-            allEntries
-                .groupBy { entry -> entry.category }
-                .mapValues { entries ->
-                    entries.value.sortedByDescending {
-                        it.purchase.timestamp
-                    }
-                }
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(TIMEOUT_MILLIS),
-            initialValue = mapOf(),
-        )
+    val purchasesByCategory = db.purchases.listByCategory(currency, startDate, endDate).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(TIMEOUT_MILLIS),
+        initialValue = mapOf(),
+    )
 
-    val categoryTotals = purchasesByCategory.map {
-        it.entries.map { entry ->
-            entry.key to entry.value.sumOf { it.purchase.amount }
-        }.sortedByDescending { pair -> pair.second }
-    }.stateIn(
+    val categoryTotals = db.purchases.categorySummaries(currency, startDate, endDate).stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(TIMEOUT_MILLIS),
         initialValue = listOf(),

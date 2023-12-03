@@ -73,6 +73,11 @@ data class DateTimeRange(
     val end: ZonedDateTime,
 )
 
+data class CategorySummary(
+    @Embedded val category: Category,
+    val total: Double,
+)
+
 @Dao
 interface PurchaseDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -90,13 +95,36 @@ interface PurchaseDao {
             AND p.purchase_currency = :currency
             AND p.purchase_timestamp >= :startDate
             AND p.purchase_timestamp < :endDate
+        ORDER BY purchase_timestamp DESC
         """
     )
-    fun list(
+    fun listByCategory(
         currency: Currency,
         startDate: ZonedDateTime,
         endDate: ZonedDateTime,
-    ): Flow<List<PurchaseEntry>>
+    ): Flow<Map<Category, List<PurchaseEntry>>>
+
+    @Query(
+        """
+        SELECT c.*, sum(purchase_amount) total
+        FROM purchase p
+        JOIN vendor v ON
+            v.vendor_id = p.purchase_vendor_id
+        LEFT OUTER JOIN category c ON
+            c.category_id = coalesce(p.purchase_category_id, v.vendor_category_id)
+        WHERE 1=1
+            AND p.purchase_currency = :currency
+            AND p.purchase_timestamp >= :startDate
+            AND p.purchase_timestamp < :endDate
+        GROUP BY category_id, category_name, category_icon, category_color
+        ORDER BY total DESC
+        """
+    )
+    fun categorySummaries(
+        currency: Currency,
+        startDate: ZonedDateTime,
+        endDate: ZonedDateTime,
+    ): Flow<List<CategorySummary>>
 
     @Query(
         """
