@@ -14,6 +14,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import java.time.ZonedDateTime
+import java.util.Locale
 
 @Stable
 @Entity(
@@ -66,7 +67,21 @@ data class PurchaseEntry(
     @Embedded val purchase: Purchase,
     @Embedded val vendor: Vendor,
     @Embedded val category: Category,
-)
+) {
+    companion object {
+        val Preview
+            get() = PurchaseEntry(
+                purchase = Purchase(
+                    timestamp = ZonedDateTime.now(),
+                    amount = 123.0,
+                    currency = Currency.getInstance(Locale.getDefault()),
+                    vendorId = 1,
+                ),
+                vendor = Vendor(name = "test"),
+                category = Category.Preview,
+            )
+    }
+}
 
 data class DateTimeRange(
     val start: ZonedDateTime,

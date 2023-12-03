@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.github.ivc.expenses.ui.compose.CategorySelectorDialog
+import com.github.ivc.expenses.ui.compose.CategorySelectionDialog
 import com.github.ivc.expenses.ui.compose.PagerNavBar
 import com.github.ivc.expenses.ui.compose.PurchaseSummaryList
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +32,6 @@ import java.util.Locale
 @Composable
 fun MonthlyScreen(model: MonthlyViewModel = viewModel()) {
     val currency by model.currency.collectAsState()
-    val categories by model.categories.collectAsState()
     val months by model.months.collectAsState()
     val pagerState = rememberPagerState { months.size }
     val ioCoroutineScope = rememberCoroutineScope { Dispatchers.IO }
@@ -43,16 +42,13 @@ fun MonthlyScreen(model: MonthlyViewModel = viewModel()) {
             Text("Empty", style = MaterialTheme.typography.displayLarge)
         }
     } else {
-        if (selectedEntry != null) {
-            CategorySelectorDialog(
-                entry = selectedEntry!!,
-                categories = categories,
+        selectedEntry?.let { entry ->
+            CategorySelectionDialog(
+                entry = entry,
                 onDismiss = { selectedEntry = null },
                 onConfirm = { category ->
-                    selectedEntry?.vendor?.let { vendor ->
-                        ioCoroutineScope.launch {
-                            model.setVendorCategory(vendor, category)
-                        }
+                    ioCoroutineScope.launch {
+                        model.setVendorCategory(entry.vendor, category)
                     }
                     selectedEntry = null
                 },

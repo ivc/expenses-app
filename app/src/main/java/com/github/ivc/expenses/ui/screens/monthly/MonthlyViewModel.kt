@@ -11,7 +11,6 @@ import com.github.ivc.expenses.db.PurchaseEntry
 import com.github.ivc.expenses.db.Vendor
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
@@ -22,11 +21,6 @@ import java.util.Locale
 class MonthlyViewModel(private val db: AppDb = AppDb.instance) : ViewModel() {
     val expandedCategories = mutableStateMapOf<Long, Boolean>()
     val selectedEntry = mutableStateOf<PurchaseEntry?>(null)
-    val categories: StateFlow<List<Category>> = db.categories.all().stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(TIMEOUT_MILLIS),
-        initialValue = listOf(),
-    )
 
     private val currencyFlow = db.purchases.currencies().mapNotNull { it.firstOrNull() }
     val currency = currencyFlow.stateIn(
