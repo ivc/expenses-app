@@ -83,7 +83,7 @@ data class Category(
                     color = r.getColor(R.color.YellowGreen, theme),
                 ),
                 Category(
-                    name = r.getString(R.string.cat_bar),
+                    name = r.getString(R.string.cat_leisure),
                     icon = BuiltinCategoryIcon.Bar.ref,
                     color = r.getColor(R.color.HotPink, theme),
                 ),
