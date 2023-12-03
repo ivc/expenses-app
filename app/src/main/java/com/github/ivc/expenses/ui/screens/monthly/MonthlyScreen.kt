@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
@@ -16,9 +17,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.ivc.expenses.ui.compose.CategorySelectorDialog
-import com.github.ivc.expenses.ui.compose.PagerTitleBar
+import com.github.ivc.expenses.ui.compose.PagerNavBar
 import com.github.ivc.expenses.ui.compose.PurchaseSummaryList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -33,7 +35,6 @@ fun MonthlyScreen(model: MonthlyViewModel = viewModel()) {
     val categories by model.categories.collectAsState()
     val months by model.months.collectAsState()
     val pagerState = rememberPagerState { months.size }
-    val coroutineScope = rememberCoroutineScope()
     val ioCoroutineScope = rememberCoroutineScope { Dispatchers.IO }
     var selectedEntry by model.selectedEntry
 
@@ -70,17 +71,23 @@ fun MonthlyScreen(model: MonthlyViewModel = viewModel()) {
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                PagerTitleBar(
-                    title = buildAnnotatedString {
-                        append(month.year.toString())
-                        appendLine()
-                        append(month.month.getDisplayName(TextStyle.FULL, Locale.getDefault()))
-                    },
-                    currentPage = pageNumber,
-                    totalPages = months.size,
-                    reversed = true,
-                    scrollToPage = { coroutineScope.launch { pagerState.scrollToPage(it) } },
-                )
+                PagerNavBar(
+                    state = pagerState,
+                    page = pageNumber,
+                    reverseLayout = true,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = buildAnnotatedString {
+                            append(month.year.toString())
+                            appendLine()
+                            append(month.month.getDisplayName(TextStyle.FULL, Locale.getDefault()))
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+
                 PurchaseSummaryList(
                     currency = currency,
                     start = month,
