@@ -4,7 +4,6 @@ import android.icu.util.Currency
 import androidx.room.ProvidedTypeConverter
 import androidx.room.TypeConverter
 import java.time.Instant
-import java.time.Year
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
@@ -47,11 +46,5 @@ class Converters(
     @TypeConverter
     fun stringToRegex(value: String): Regex {
         return Regex(value)
-    }
-
-    @TypeConverter
-    fun longToYearMonth(value: Long): YearMonth {
-        val dateTime = longToZonedDateTime(value)
-        return YearMonth(Year.of(dateTime.year), dateTime.month)
     }
 }

@@ -9,15 +9,10 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.Insert
-import androidx.room.MapColumn
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import java.time.Month
-import java.time.Year
 import java.time.ZonedDateTime
 
 @Stable
@@ -43,6 +38,7 @@ import java.time.ZonedDateTime
     indices = [
         Index("purchase_vendor_id"),
         Index("purchase_category_id"),
+        Index("purchase_currency", "purchase_timestamp"),
     ],
 )
 data class Purchase(
@@ -72,31 +68,10 @@ data class PurchaseEntry(
     @Embedded val category: Category,
 )
 
-data class YearMonth(
-    val year: Year,
-    val month: Month,
-) : Comparable<YearMonth> {
-    override fun compareTo(other: YearMonth): Int {
-        return when (val cmpYear = this.year.compareTo(other.year)) {
-            0 -> this.month.compareTo(other.month)
-            else -> cmpYear
-        }
-    }
-}
-
-data class MonthlyReport(
-    val yearMonth: YearMonth,
-    val categories: List<CategorySummary>,
-) {
-    val total: Double by lazy { categories.sumOf { it.total } }
-}
-
-data class CategorySummary(
-    val category: Category,
-    val purchases: List<PurchaseEntry>,
-) {
-    val total: Double by lazy { purchases.sumOf { it.purchase.amount } }
-}
+data class DateTimeRange(
+    val start: ZonedDateTime,
+    val end: ZonedDateTime,
+)
 
 @Dao
 interface PurchaseDao {
@@ -111,35 +86,30 @@ interface PurchaseDao {
             v.vendor_id = p.purchase_vendor_id
         LEFT OUTER JOIN category c ON
             c.category_id = coalesce(p.purchase_category_id, v.vendor_category_id)
+        WHERE 1=1
+            AND p.purchase_currency = :currency
+            AND p.purchase_timestamp >= :startDate
+            AND p.purchase_timestamp < :endDate
         """
     )
-    fun purchaseEntriesByCurrencyByYearMonthByCategory(): Flow<
-            Map<@MapColumn("purchase_currency") Currency,
-                    Map<@MapColumn("purchase_timestamp") YearMonth,
-                            Map<Category, List<PurchaseEntry>>>>>
+    fun list(
+        currency: Currency,
+        startDate: ZonedDateTime,
+        endDate: ZonedDateTime,
+    ): Flow<List<PurchaseEntry>>
+
+    @Query(
+        """
+        SELECT min(purchase_timestamp) `start`, max(purchase_timestamp) `end`
+        FROM purchase
+        WHERE purchase_currency = :currency
+        """
+    )
+    fun dateTimeRange(currency: Currency?): Flow<DateTimeRange?>
 
     @Query("SELECT DISTINCT purchase_currency FROM purchase ORDER BY purchase_currency")
     fun currencies(): Flow<List<Currency>>
 
     @Query("SELECT max(purchase_timestamp) FROM purchase")
     suspend fun maxTimestamp(): ZonedDateTime?
-
-    fun monthlyReports(): Flow<Map<Currency, List<MonthlyReport>>> {
-        return purchaseEntriesByCurrencyByYearMonthByCategory().distinctUntilChanged()
-            .map { everyResult ->
-                everyResult.mapValues { byCurrencyEntry ->
-                    byCurrencyEntry.value.entries.map { byYearMonthEntry ->
-                        MonthlyReport(
-                            yearMonth = byYearMonthEntry.key,
-                            categories = byYearMonthEntry.value.entries.map { byCategoryEntry ->
-                                CategorySummary(
-                                    category = byCategoryEntry.key,
-                                    purchases = byCategoryEntry.value.sortedByDescending { it.purchase.timestamp },
-                                )
-                            }.sortedByDescending { it.total }
-                        )
-                    }.sortedByDescending { it.yearMonth }
-                }
-            }
-    }
 }
