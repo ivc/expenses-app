@@ -18,7 +18,7 @@ import com.github.ivc.expenses.R
 import kotlinx.coroutines.flow.Flow
 
 @Stable
-@Entity
+@Entity(tableName = Category.TABLE)
 data class Category(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo("category_id")
@@ -34,6 +34,7 @@ data class Category(
     @ColorInt val color: Int,
 ) {
     companion object {
+        const val TABLE = "category"
         const val Default: Long = 1
         val Preview =
             Category(

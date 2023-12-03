@@ -4,6 +4,7 @@ import android.icu.util.Currency
 import androidx.compose.runtime.Stable
 import androidx.room.ColumnInfo
 import androidx.room.Dao
+import androidx.room.DatabaseView
 import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -18,6 +19,7 @@ import java.util.Locale
 
 @Stable
 @Entity(
+    tableName = Purchase.TABLE,
     foreignKeys = [
         ForeignKey(
             entity = Vendor::class,
@@ -61,14 +63,30 @@ data class Purchase(
 
     @ColumnInfo(name = "purchase_category_id")
     val categoryId: Long? = null,
-)
+) {
+    companion object {
+        const val TABLE = "purchase"
+    }
+}
 
+@DatabaseView(
+    value = """
+    SELECT p.*, v.*, c.*
+    FROM ${Purchase.TABLE} p
+    JOIN ${Vendor.TABLE} v ON
+        v.vendor_id = p.purchase_vendor_id
+    LEFT OUTER JOIN ${Category.TABLE} c ON
+        c.category_id = coalesce(p.purchase_category_id, v.vendor_category_id)    
+    """,
+    viewName = PurchaseEntry.VIEW,
+)
 data class PurchaseEntry(
     @Embedded val purchase: Purchase,
     @Embedded val vendor: Vendor,
     @Embedded val category: Category,
 ) {
     companion object {
+        const val VIEW = "purchase_entries"
         val Preview
             get() = PurchaseEntry(
                 purchase = Purchase(
@@ -100,16 +118,9 @@ interface PurchaseDao {
 
     @Query(
         """
-        SELECT p.*, v.*, c.*
-        FROM purchase p
-        JOIN vendor v ON
-            v.vendor_id = p.purchase_vendor_id
-        LEFT OUTER JOIN category c ON
-            c.category_id = coalesce(p.purchase_category_id, v.vendor_category_id)
-        WHERE 1=1
-            AND p.purchase_currency = :currency
-            AND p.purchase_timestamp >= :startDate
-            AND p.purchase_timestamp < :endDate
+        SELECT *
+        FROM ${PurchaseEntry.VIEW}
+        WHERE purchase_currency = :currency AND purchase_timestamp BETWEEN :startDate AND :endDate - 1
         ORDER BY purchase_timestamp DESC
         """
     )
@@ -121,16 +132,9 @@ interface PurchaseDao {
 
     @Query(
         """
-        SELECT c.*, sum(purchase_amount) total
-        FROM purchase p
-        JOIN vendor v ON
-            v.vendor_id = p.purchase_vendor_id
-        LEFT OUTER JOIN category c ON
-            c.category_id = coalesce(p.purchase_category_id, v.vendor_category_id)
-        WHERE 1=1
-            AND p.purchase_currency = :currency
-            AND p.purchase_timestamp >= :startDate
-            AND p.purchase_timestamp < :endDate
+        SELECT category_id, category_name, category_icon, category_color, sum(purchase_amount) total
+        FROM ${PurchaseEntry.VIEW}
+        WHERE purchase_currency = :currency AND purchase_timestamp BETWEEN :startDate AND :endDate - 1
         GROUP BY category_id, category_name, category_icon, category_color
         ORDER BY total DESC
         """
@@ -144,15 +148,15 @@ interface PurchaseDao {
     @Query(
         """
         SELECT min(purchase_timestamp) `start`, max(purchase_timestamp) `end`
-        FROM purchase
+        FROM ${Purchase.TABLE}
         WHERE purchase_currency = :currency
         """
     )
     fun dateTimeRange(currency: Currency?): Flow<DateTimeRange?>
 
-    @Query("SELECT DISTINCT purchase_currency FROM purchase ORDER BY purchase_currency")
+    @Query("SELECT DISTINCT purchase_currency FROM ${Purchase.TABLE} ORDER BY purchase_currency")
     fun currencies(): Flow<List<Currency>>
 
-    @Query("SELECT max(purchase_timestamp) FROM purchase")
+    @Query("SELECT max(purchase_timestamp) FROM ${Purchase.TABLE}")
     suspend fun maxTimestamp(): ZonedDateTime?
 }

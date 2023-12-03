@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Stable
 @Entity(
+    tableName = Vendor.TABLE,
     foreignKeys = [
         ForeignKey(
             entity = Category::class,
@@ -41,20 +42,24 @@ data class Vendor(
 
     @ColumnInfo(name = "vendor_category_id")
     val categoryId: Long = Category.Default,
-)
+) {
+    companion object {
+        const val TABLE = "vendor"
+    }
+}
 
 @Dao
 interface VendorDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(vendor: Vendor): Long
 
-    @Query("SELECT vendor_id, vendor_name FROM vendor")
+    @Query("SELECT vendor_id, vendor_name FROM ${Vendor.TABLE}")
     suspend fun idByName(): Map<
             @MapColumn("vendor_name") String,
             @MapColumn("vendor_id") Long,
             >
 
-    @Query("SELECT * FROM vendor")
+    @Query("SELECT * FROM ${Vendor.TABLE}")
     fun indexById(): Flow<Map<@MapColumn("vendor_id") Long, Vendor>>
 
     @Update

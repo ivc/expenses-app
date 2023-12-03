@@ -12,7 +12,10 @@ import androidx.room.TypeConverters
         Vendor::class,
         Purchase::class,
         SmsRule::class,
-    ]
+    ],
+    views = [
+        PurchaseEntry::class,
+    ],
 )
 @TypeConverters(Converters::class)
 abstract class AppDb : RoomDatabase() {
