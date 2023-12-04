@@ -55,33 +55,36 @@ fun PurchaseSummaryList(
             for (summary in totals) {
                 val category = summary.category
                 val categoryTotal = summary.total
+                val isExpanded = (true == expandedCategoriesState[category.id])
                 stickyHeader(
+                    contentType = Category::class,
                     key = "category-${category.id}",
                 ) {
                     CategoryListItem(
                         category = category,
                         total = categoryTotal,
-                        onClick = {
-                            expandedCategoriesState[category.id] =
-                                !(expandedCategoriesState[category.id] ?: false)
-                        },
+                        onClick = { expandedCategoriesState.toggle(category.id) },
                     )
                 }
-                if (expandedCategoriesState[category.id] == true) {
-                    items(
-                        items = purchases[category] ?: listOf(),
-                        contentType = { PurchaseEntry::class },
-                        key = { "purchase-${it.purchase.id}" },
-                    ) { entry ->
-                        PurchaseEntryListItem(
-                            entry = entry,
-                            onLongClick = onPurchaseEntryLongClick,
-                        )
-                    }
+
+                val entries = purchases[category]?.takeIf { isExpanded } ?: listOf()
+                items(
+                    items = entries,
+                    contentType = { PurchaseEntry::class },
+                    key = { "purchase-${it.purchase.id}" },
+                ) { entry ->
+                    PurchaseEntryListItem(
+                        entry = entry,
+                        onLongClick = onPurchaseEntryLongClick,
+                    )
                 }
             }
         }
     }
+}
+
+fun SnapshotStateMap<Long, Boolean>.toggle(id: Long) {
+    this[id] = (true != this[id])
 }
 
 @Preview
